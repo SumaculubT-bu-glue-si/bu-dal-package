@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # MySQL database for testing
+  mysql:
+    image: mysql:8.0
+    container_name: graphql-dal-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: graphql_dal_test
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - graphql-dal-network
+
+  # PostgreSQL database for testing
+  postgres:
+    image: postgres:15
+    container_name: graphql-dal-postgres
+    environment:
+      POSTGRES_DB: graphql_dal_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - graphql-dal-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: graphql-dal-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - graphql-dal-network
+
+  # PHP development environment
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: graphql-dal-php
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - mysql
+      - postgres
+      - redis
+    networks:
+      - graphql-dal-network
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=graphql_dal_test
+      - DB_USERNAME=test
+      - DB_PASSWORD=test
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+volumes:
+  mysql_data:
+  postgres_data:
+
+networks:
+  graphql-dal-network:
+    driver: bridge
