@@ -1,44 +1,47 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database\Repositories;
+namespace Bu\DAL\Database\Repositories;
 
-use YourCompany\GraphQLDAL\Models\AuditAssignment;
+use Bu\DAL\Models\AuditAssignment;
 use Illuminate\Database\Eloquent\Collection;
 
 class AuditAssignmentRepository extends BaseRepository
 {
-    protected string $modelClass = AuditAssignment::class;
+    public function __construct(AuditAssignment $model)
+    {
+        parent::__construct($model);
+    }
 
     /**
-     * Get audit assignments by audit plan.
+     * Get assignments by audit plan.
      */
     public function getByAuditPlan(int $auditPlanId): Collection
     {
-        return $this->newQuery()->where('audit_plan_id', $auditPlanId)->get();
+        return $this->model->where('audit_plan_id', $auditPlanId)->get();
     }
 
     /**
-     * Get audit assignments by auditor.
+     * Get assignments by auditor.
      */
     public function getByAuditor(int $auditorId): Collection
     {
-        return $this->newQuery()->where('auditor_id', $auditorId)->get();
+        return $this->model->where('auditor_id', $auditorId)->get();
     }
 
     /**
-     * Get audit assignments by location.
+     * Get assignments by location.
      */
     public function getByLocation(int $locationId): Collection
     {
-        return $this->newQuery()->where('location_id', $locationId)->get();
+        return $this->model->where('location_id', $locationId)->get();
     }
 
     /**
-     * Get audit assignments by status.
+     * Get assignments by status.
      */
     public function getByStatus(string $status): Collection
     {
-        return $this->newQuery()->where('status', $status)->get();
+        return $this->model->where('status', $status)->get();
     }
 
     /**
@@ -46,7 +49,7 @@ class AuditAssignmentRepository extends BaseRepository
      */
     public function getCompleted(): Collection
     {
-        return $this->getByStatus('Completed');
+        return $this->model->where('status', 'Completed')->get();
     }
 
     /**
@@ -54,29 +57,39 @@ class AuditAssignmentRepository extends BaseRepository
      */
     public function getInProgress(): Collection
     {
-        return $this->getByStatus('In Progress');
+        return $this->model->where('status', 'In Progress')->get();
     }
 
     /**
-     * Get audit assignment statistics.
+     * Get assigned (pending) assignments.
      */
-    public function getStatistics(): array
+    public function getAssigned(): Collection
     {
-        $total = $this->count();
-        $completed = $this->getCompleted()->count();
-        $inProgress = $this->getInProgress()->count();
+        return $this->model->where('status', 'Assigned')->get();
+    }
 
-        $byStatus = $this->newQuery()
-            ->selectRaw('status, COUNT(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status')
-            ->toArray();
+    /**
+     * Get assignment with details.
+     */
+    public function getWithDetails(int $id): ?AuditAssignment
+    {
+        return $this->model->with(['auditPlan', 'location', 'auditor'])
+            ->find($id);
+    }
 
-        return [
-            'total' => $total,
-            'completed' => $completed,
-            'in_progress' => $inProgress,
-            'by_status' => $byStatus,
-        ];
+    /**
+     * Complete an assignment.
+     */
+    public function complete(int $id, ?string $notes = null): bool
+    {
+        $assignment = $this->find($id);
+        if (!$assignment) {
+            return false;
+        }
+
+        return $assignment->update([
+            'status' => 'Completed',
+            'notes' => $notes
+        ]);
     }
 }

@@ -1,236 +1,126 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database\Repositories;
+namespace Bu\DAL\Database\Repositories;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use YourCompany\GraphQLDAL\Database\DatabaseManager;
-use YourCompany\GraphQLDAL\Exceptions\RepositoryException;
 
 abstract class BaseRepository
 {
-    protected DatabaseManager $dbManager;
-    protected string $modelClass;
+    protected Model $model;
 
-    public function __construct(DatabaseManager $dbManager)
+    public function __construct(Model $model)
     {
-        $this->dbManager = $dbManager;
+        $this->model = $model;
     }
 
     /**
-     * Get the model instance.
-     */
-    protected function getModel(): Model
-    {
-        if (!class_exists($this->modelClass)) {
-            throw new RepositoryException("Model class {$this->modelClass} does not exist");
-        }
-
-        return new $this->modelClass;
-    }
-
-    /**
-     * Get a new query builder instance.
-     */
-    protected function newQuery()
-    {
-        return $this->getModel()->newQuery();
-    }
-
-    /**
-     * Find a model by its primary key.
-     */
-    public function find(int|string $id): ?Model
-    {
-        return $this->newQuery()->find($id);
-    }
-
-    /**
-     * Find a model by its primary key or throw an exception.
-     */
-    public function findOrFail(int|string $id): Model
-    {
-        return $this->newQuery()->findOrFail($id);
-    }
-
-    /**
-     * Find models by an array of primary keys.
-     */
-    public function findMany(array $ids): Collection
-    {
-        return $this->newQuery()->whereIn($this->getModel()->getKeyName(), $ids)->get();
-    }
-
-    /**
-     * Find the first model matching the given criteria.
-     */
-    public function findBy(array $criteria): ?Model
-    {
-        $query = $this->newQuery();
-
-        foreach ($criteria as $field => $value) {
-            $query->where($field, $value);
-        }
-
-        return $query->first();
-    }
-
-    /**
-     * Find all models matching the given criteria.
-     */
-    public function findAllBy(array $criteria): Collection
-    {
-        $query = $this->newQuery();
-
-        foreach ($criteria as $field => $value) {
-            $query->where($field, $value);
-        }
-
-        return $query->get();
-    }
-
-    /**
-     * Create a new model instance.
-     */
-    public function create(array $data): Model
-    {
-        return $this->dbManager->transaction(function () use ($data) {
-            return $this->getModel()->create($data);
-        });
-    }
-
-    /**
-     * Update a model by its primary key.
-     */
-    public function update(int|string $id, array $data): bool
-    {
-        return $this->dbManager->transaction(function () use ($id, $data) {
-            $model = $this->findOrFail($id);
-            return $model->update($data);
-        });
-    }
-
-    /**
-     * Update or create a model.
-     */
-    public function updateOrCreate(array $criteria, array $data): Model
-    {
-        return $this->dbManager->transaction(function () use ($criteria, $data) {
-            return $this->getModel()->updateOrCreate($criteria, $data);
-        });
-    }
-
-    /**
-     * Delete a model by its primary key.
-     */
-    public function delete(int|string $id): bool
-    {
-        return $this->dbManager->transaction(function () use ($id) {
-            $model = $this->findOrFail($id);
-            return $model->delete();
-        });
-    }
-
-    /**
-     * Delete models by criteria.
-     */
-    public function deleteBy(array $criteria): int
-    {
-        return $this->dbManager->transaction(function () use ($criteria) {
-            $query = $this->newQuery();
-
-            foreach ($criteria as $field => $value) {
-                $query->where($field, $value);
-            }
-
-            return $query->delete();
-        });
-    }
-
-    /**
-     * Get all models.
+     * Get all records.
      */
     public function all(): Collection
     {
-        return $this->newQuery()->get();
+        return $this->model->all();
+    }
+
+    /**
+     * Find a record by ID.
+     */
+    public function find(int $id): ?Model
+    {
+        return $this->model->find($id);
+    }
+
+    /**
+     * Find a record by ID or fail.
+     */
+    public function findOrFail(int $id): Model
+    {
+        return $this->model->findOrFail($id);
+    }
+
+    /**
+     * Create a new record.
+     */
+    public function create(array $data): Model
+    {
+        return $this->model->create($data);
+    }
+
+    /**
+     * Update a record by ID.
+     */
+    public function update(int $id, array $data): bool
+    {
+        $model = $this->find($id);
+        if (!$model) {
+            return false;
+        }
+        return $model->update($data);
+    }
+
+    /**
+     * Delete a record by ID.
+     */
+    public function delete(int $id): bool
+    {
+        $model = $this->find($id);
+        if (!$model) {
+            return false;
+        }
+        return $model->delete();
     }
 
     /**
      * Get paginated results.
      */
-    public function paginate(int $perPage = 15, int $page = 1): LengthAwarePaginator
+    public function paginate(int $perPage = 15): LengthAwarePaginator
     {
-        return $this->newQuery()->paginate($perPage, ['*'], 'page', $page);
+        return $this->model->paginate($perPage);
     }
 
     /**
-     * Count models matching criteria.
+     * Get records with conditions.
      */
-    public function count(array $criteria = []): int
+    public function where(string $column, $operator, $value = null): Collection
     {
-        $query = $this->newQuery();
+        if ($value === null) {
+            return $this->model->where($column, $operator)->get();
+        }
+        return $this->model->where($column, $operator, $value)->get();
+    }
 
-        foreach ($criteria as $field => $value) {
-            $query->where($field, $value);
+    /**
+     * Get first record with conditions.
+     */
+    public function whereFirst(string $column, $operator, $value = null): ?Model
+    {
+        if ($value === null) {
+            return $this->model->where($column, $operator)->first();
+        }
+        return $this->model->where($column, $operator, $value)->first();
+    }
+
+    /**
+     * Count records with conditions.
+     */
+    public function count(?string $column = null, $operator = null, $value = null): int
+    {
+        if ($column === null) {
+            return $this->model->count();
         }
 
-        return $query->count();
-    }
-
-    /**
-     * Check if a model exists.
-     */
-    public function exists(array $criteria): bool
-    {
-        $query = $this->newQuery();
-
-        foreach ($criteria as $field => $value) {
-            $query->where($field, $value);
+        if ($value === null) {
+            return $this->model->where($column, $operator)->count();
         }
-
-        return $query->exists();
+        return $this->model->where($column, $operator, $value)->count();
     }
 
     /**
-     * Get the first model or create it.
+     * Get the model instance.
      */
-    public function firstOrCreate(array $criteria, array $data = []): Model
+    public function getModel(): Model
     {
-        return $this->dbManager->transaction(function () use ($criteria, $data) {
-            return $this->getModel()->firstOrCreate($criteria, $data);
-        });
-    }
-
-    /**
-     * Bulk create models.
-     */
-    public function bulkCreate(array $data): Collection
-    {
-        return $this->dbManager->transaction(function () use ($data) {
-            $models = collect();
-
-            foreach ($data as $item) {
-                $models->push($this->getModel()->create($item));
-            }
-
-            return $models;
-        });
-    }
-
-    /**
-     * Bulk update models.
-     */
-    public function bulkUpdate(array $criteria, array $data): int
-    {
-        return $this->dbManager->transaction(function () use ($criteria, $data) {
-            $query = $this->newQuery();
-
-            foreach ($criteria as $field => $value) {
-                $query->where($field, $value);
-            }
-
-            return $query->update($data);
-        });
+        return $this->model;
     }
 }

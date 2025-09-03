@@ -1,15 +1,17 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\GraphQL\Mutations;
+namespace Bu\DAL\GraphQL\Mutations;
 
-use YourCompany\GraphQLDAL\Models\Asset;
-use YourCompany\GraphQLDAL\Database\Repositories\AssetRepository;
+use Bu\DAL\Models\Asset;
+use Bu\DAL\Database\Repositories\AssetRepository;
+use Bu\DAL\Database\DatabaseManager;
 use Illuminate\Support\Arr;
 
 class AssetMutations
 {
     public function __construct(
-        private AssetRepository $assetRepository
+        private AssetRepository $assetRepository,
+        private DatabaseManager $databaseManager
     ) {}
 
     /**
@@ -17,9 +19,10 @@ class AssetMutations
      */
     public function upsertAsset($_, array $args): Asset
     {
-        $input = $args['asset'];
-
-        return $this->assetRepository->upsertByAssetId($input);
+        return $this->databaseManager->transaction(function () use ($args) {
+            $input = $args['asset'];
+            return $this->assetRepository->upsertByAssetId($input);
+        });
     }
 
     /**
@@ -27,11 +30,11 @@ class AssetMutations
      */
     public function bulkUpsertAssets($_, array $args): array
     {
-        $inputs = $args['assets'];
-
-        $assets = $this->assetRepository->bulkUpsertByAssetId($inputs);
-
-        return $assets->all();
+        return $this->databaseManager->transaction(function () use ($args) {
+            $inputs = $args['assets'];
+            $results = $this->assetRepository->bulkUpsert($inputs);
+            return $results->all();
+        });
     }
 
     /**
@@ -39,8 +42,9 @@ class AssetMutations
      */
     public function deleteAsset($_, array $args): bool
     {
-        $assetId = $args['asset_id'];
-
-        return $this->assetRepository->deleteByAssetId($assetId);
+        return $this->databaseManager->transaction(function () use ($args) {
+            $assetId = $args['asset_id'];
+            return $this->assetRepository->deleteByAssetId($assetId);
+        });
     }
 }

@@ -1,9 +1,9 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\GraphQL\Queries;
+namespace Bu\DAL\GraphQL\Queries;
 
-use YourCompany\GraphQLDAL\Models\Location;
-use YourCompany\GraphQLDAL\Database\Repositories\LocationRepository;
+use Bu\DAL\Models\Location;
+use Bu\DAL\Database\Repositories\LocationRepository;
 
 class LocationQueries
 {
@@ -44,6 +44,6 @@ class LocationQueries
     {
         $id = $args['id'];
 
-        return $this->locationRepository->find($id);
+        return Location::find($id);
     }
 }

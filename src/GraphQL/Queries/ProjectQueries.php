@@ -1,9 +1,9 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\GraphQL\Queries;
+namespace Bu\DAL\GraphQL\Queries;
 
-use YourCompany\GraphQLDAL\Models\Project;
-use YourCompany\GraphQLDAL\Database\Repositories\ProjectRepository;
+use Bu\DAL\Models\Project;
+use Bu\DAL\Database\Repositories\ProjectRepository;
 use GraphQL\Type\Definition\ResolveInfo;
 use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
 
@@ -18,7 +18,7 @@ class ProjectQueries
      */
     public function project($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->projectRepository->find($args['id']);
+        return Project::find($args['id']);
     }
 
     /**

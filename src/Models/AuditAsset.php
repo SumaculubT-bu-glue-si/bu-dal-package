@@ -1,6 +1,6 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Models;
+namespace Bu\DAL\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -275,27 +275,5 @@ class AuditAsset extends Model
             \Illuminate\Support\Facades\Log::warning("Could not resolve user ID for name: {$userIdentifier}. Error: " . $e->getMessage());
             return null;
         }
-    }
-
-    /**
-     * Get user information for display purposes.
-     */
-    public function getUserInfo(): array
-    {
-        $currentUserId = $this->resolveUserId($this->current_user);
-        $originalUserId = $this->resolveUserId($this->original_user);
-
-        return [
-            'current_user' => [
-                'id' => $currentUserId,
-                'name' => $this->current_user,
-                'is_id' => is_numeric($this->current_user)
-            ],
-            'original_user' => [
-                'id' => $originalUserId,
-                'name' => $this->original_user,
-                'is_id' => is_numeric($this->original_user)
-            ]
-        ];
     }
 }

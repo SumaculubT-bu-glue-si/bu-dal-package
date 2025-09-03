@@ -1,20 +1,23 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database\Repositories;
+namespace Bu\DAL\Database\Repositories;
 
-use YourCompany\GraphQLDAL\Models\AuditAsset;
+use Bu\DAL\Models\AuditAsset;
 use Illuminate\Database\Eloquent\Collection;
 
 class AuditAssetRepository extends BaseRepository
 {
-    protected string $modelClass = AuditAsset::class;
+    public function __construct(AuditAsset $model)
+    {
+        parent::__construct($model);
+    }
 
     /**
      * Get audit assets by audit plan.
      */
     public function getByAuditPlan(int $auditPlanId): Collection
     {
-        return $this->newQuery()->where('audit_plan_id', $auditPlanId)->get();
+        return $this->model->where('audit_plan_id', $auditPlanId)->get();
     }
 
     /**
@@ -22,7 +25,7 @@ class AuditAssetRepository extends BaseRepository
      */
     public function getByStatus(string $status): Collection
     {
-        return $this->newQuery()->where('current_status', $status)->get();
+        return $this->model->where('current_status', $status)->get();
     }
 
     /**
@@ -30,47 +33,69 @@ class AuditAssetRepository extends BaseRepository
      */
     public function getAudited(): Collection
     {
-        return $this->newQuery()->where('audit_status', true)->get();
+        return $this->model->where('audit_status', true)->get();
     }
 
     /**
-     * Get resolved assets.
+     * Get pending audit assets.
+     */
+    public function getPending(): Collection
+    {
+        return $this->model->where('audit_status', false)->get();
+    }
+
+    /**
+     * Get resolved audit assets.
      */
     public function getResolved(): Collection
     {
-        return $this->newQuery()->where('resolved', true)->get();
+        return $this->model->where('resolved', true)->get();
     }
 
     /**
-     * Get audit assets with corrective actions.
+     * Get unresolved audit assets.
      */
-    public function getWithCorrectiveActions(int $auditAssetId): ?AuditAsset
+    public function getUnresolved(): Collection
     {
-        return $this->newQuery()
-            ->with('correctiveActions')
-            ->find($auditAssetId);
+        return $this->model->where('resolved', false)->get();
     }
 
     /**
-     * Get audit asset statistics.
+     * Get audit assets with issues.
      */
-    public function getStatistics(): array
+    public function getWithIssues(): Collection
     {
-        $total = $this->count();
-        $audited = $this->getAudited()->count();
-        $resolved = $this->getResolved()->count();
+        return $this->model->whereIn('current_status', ['故障中', '廃止'])->get();
+    }
 
-        $byStatus = $this->newQuery()
-            ->selectRaw('current_status, COUNT(*) as count')
-            ->groupBy('current_status')
-            ->pluck('count', 'current_status')
-            ->toArray();
+    /**
+     * Get audit assets by auditor.
+     */
+    public function getByAuditor(string $auditor): Collection
+    {
+        return $this->model->where('audited_by', $auditor)->get();
+    }
 
-        return [
-            'total' => $total,
-            'audited' => $audited,
-            'resolved' => $resolved,
-            'by_status' => $byStatus,
-        ];
+    /**
+     * Get audit asset with details.
+     */
+    public function getWithDetails(int $id): ?AuditAsset
+    {
+        return $this->model->with(['auditPlan', 'asset', 'correctiveActions'])
+            ->find($id);
+    }
+
+    /**
+     * Mark asset as audited.
+     */
+    public function markAsAudited(int $id, string $auditor, string $status, ?string $notes = null): bool
+    {
+        $auditAsset = $this->find($id);
+        if (!$auditAsset) {
+            return false;
+        }
+
+        $auditAsset->markAsAudited($auditor, $status, $notes);
+        return true;
     }
 }

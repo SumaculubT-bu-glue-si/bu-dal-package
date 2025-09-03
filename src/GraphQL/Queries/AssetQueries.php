@@ -1,9 +1,9 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\GraphQL\Queries;
+namespace Bu\DAL\GraphQL\Queries;
 
-use YourCompany\GraphQLDAL\Models\Asset;
-use YourCompany\GraphQLDAL\Database\Repositories\AssetRepository;
+use Bu\DAL\Models\Asset;
+use Bu\DAL\Database\Repositories\AssetRepository;
 use Illuminate\Database\Eloquent\Builder;
 
 class AssetQueries
@@ -23,10 +23,6 @@ class AssetQueries
     /**
      * Builder for assets pagination with rich filters.
      * This is referenced by schema.graphql via @paginate(builder: ...).
-     *
-     * @param  mixed   $root
-     * @param  array   $args
-     * @return Builder
      */
     public function assetsBuilder($root, array $args): Builder
     {

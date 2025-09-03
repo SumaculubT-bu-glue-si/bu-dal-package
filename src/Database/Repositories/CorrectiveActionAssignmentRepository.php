@@ -1,52 +1,55 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database\Repositories;
+namespace Bu\DAL\Database\Repositories;
 
-use YourCompany\GraphQLDAL\Models\CorrectiveActionAssignment;
+use Bu\DAL\Models\CorrectiveActionAssignment;
 use Illuminate\Database\Eloquent\Collection;
 
 class CorrectiveActionAssignmentRepository extends BaseRepository
 {
-    protected string $modelClass = CorrectiveActionAssignment::class;
+    public function __construct(CorrectiveActionAssignment $model)
+    {
+        parent::__construct($model);
+    }
 
     /**
-     * Get corrective action assignments by corrective action.
+     * Get assignments by corrective action.
      */
     public function getByCorrectiveAction(int $correctiveActionId): Collection
     {
-        return $this->newQuery()->where('corrective_action_id', $correctiveActionId)->get();
+        return $this->model->where('corrective_action_id', $correctiveActionId)->get();
     }
 
     /**
-     * Get corrective action assignments by audit assignment.
+     * Get assignments by audit assignment.
      */
     public function getByAuditAssignment(int $auditAssignmentId): Collection
     {
-        return $this->newQuery()->where('audit_assignment_id', $auditAssignmentId)->get();
+        return $this->model->where('audit_assignment_id', $auditAssignmentId)->get();
     }
 
     /**
-     * Get corrective action assignments by employee.
+     * Get assignments by employee.
      */
     public function getByEmployee(int $employeeId): Collection
     {
-        return $this->newQuery()->where('assigned_to_employee_id', $employeeId)->get();
+        return $this->model->where('assigned_to_employee_id', $employeeId)->get();
     }
 
     /**
-     * Get corrective action assignments by status.
+     * Get assignments by status.
      */
     public function getByStatus(string $status): Collection
     {
-        return $this->newQuery()->where('status', $status)->get();
+        return $this->model->where('status', $status)->get();
     }
 
     /**
-     * Get completed assignments.
+     * Get pending assignments.
      */
-    public function getCompleted(): Collection
+    public function getPending(): Collection
     {
-        return $this->getByStatus('completed');
+        return $this->model->where('status', 'pending')->get();
     }
 
     /**
@@ -54,7 +57,15 @@ class CorrectiveActionAssignmentRepository extends BaseRepository
      */
     public function getInProgress(): Collection
     {
-        return $this->getByStatus('in_progress');
+        return $this->model->where('status', 'in_progress')->get();
+    }
+
+    /**
+     * Get completed assignments.
+     */
+    public function getCompleted(): Collection
+    {
+        return $this->model->where('status', 'completed')->get();
     }
 
     /**
@@ -62,31 +73,57 @@ class CorrectiveActionAssignmentRepository extends BaseRepository
      */
     public function getOverdue(): Collection
     {
-        return $this->getByStatus('overdue');
+        return $this->model->where('status', 'overdue')->get();
     }
 
     /**
-     * Get corrective action assignment statistics.
+     * Get assignment with details.
      */
-    public function getStatistics(): array
+    public function getWithDetails(int $id): ?CorrectiveActionAssignment
     {
-        $total = $this->count();
-        $completed = $this->getCompleted()->count();
-        $inProgress = $this->getInProgress()->count();
-        $overdue = $this->getOverdue()->count();
+        return $this->model->with(['correctiveAction', 'auditAssignment', 'assignedToEmployee'])
+            ->find($id);
+    }
 
-        $byStatus = $this->newQuery()
-            ->selectRaw('status, COUNT(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status')
-            ->toArray();
+    /**
+     * Mark assignment as started.
+     */
+    public function markAsStarted(int $id): bool
+    {
+        $assignment = $this->find($id);
+        if (!$assignment) {
+            return false;
+        }
 
-        return [
-            'total' => $total,
-            'completed' => $completed,
-            'in_progress' => $inProgress,
-            'overdue' => $overdue,
-            'by_status' => $byStatus,
-        ];
+        $assignment->markAsStarted();
+        return true;
+    }
+
+    /**
+     * Mark assignment as completed.
+     */
+    public function markAsCompleted(int $id): bool
+    {
+        $assignment = $this->find($id);
+        if (!$assignment) {
+            return false;
+        }
+
+        $assignment->markAsCompleted();
+        return true;
+    }
+
+    /**
+     * Update progress notes.
+     */
+    public function updateProgressNotes(int $id, string $notes): bool
+    {
+        $assignment = $this->find($id);
+        if (!$assignment) {
+            return false;
+        }
+
+        $assignment->updateProgressNotes($notes);
+        return true;
     }
 }

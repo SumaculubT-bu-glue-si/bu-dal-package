@@ -1,20 +1,23 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database\Repositories;
+namespace Bu\DAL\Database\Repositories;
 
-use YourCompany\GraphQLDAL\Models\AuditPlan;
+use Bu\DAL\Models\AuditPlan;
 use Illuminate\Database\Eloquent\Collection;
 
 class AuditPlanRepository extends BaseRepository
 {
-    protected string $modelClass = AuditPlan::class;
+    public function __construct(AuditPlan $model)
+    {
+        parent::__construct($model);
+    }
 
     /**
      * Get audit plans by status.
      */
     public function getByStatus(string $status): Collection
     {
-        return $this->newQuery()->where('status', $status)->get();
+        return $this->model->where('status', $status)->get();
     }
 
     /**
@@ -22,7 +25,7 @@ class AuditPlanRepository extends BaseRepository
      */
     public function getByCreator(int $createdBy): Collection
     {
-        return $this->newQuery()->where('created_by', $createdBy)->get();
+        return $this->model->where('created_by', $createdBy)->get();
     }
 
     /**
@@ -30,8 +33,7 @@ class AuditPlanRepository extends BaseRepository
      */
     public function getActive(): Collection
     {
-        return $this->newQuery()
-            ->where('status', 'In Progress')
+        return $this->model->where('status', 'In Progress')
             ->where('due_date', '>', now())
             ->get();
     }
@@ -41,64 +43,41 @@ class AuditPlanRepository extends BaseRepository
      */
     public function getOverdue(): Collection
     {
-        return $this->newQuery()
-            ->where('due_date', '<', now())
+        return $this->model->where('due_date', '<', now())
             ->where('status', '!=', 'Completed')
             ->get();
     }
 
     /**
-     * Get audit plans with assignments.
+     * Get audit plans due soon.
      */
-    public function getWithAssignments(int $auditPlanId): ?AuditPlan
+    public function getDueSoon(int $days = 7): Collection
     {
-        return $this->newQuery()
-            ->with('assignments')
-            ->find($auditPlanId);
+        return $this->model->where('due_date', '<=', now()->addDays($days))
+            ->where('due_date', '>', now())
+            ->where('status', '!=', 'Completed')
+            ->get();
     }
 
     /**
-     * Get audit plans with audit assets.
+     * Get audit plan with assignments and assets.
      */
-    public function getWithAuditAssets(int $auditPlanId): ?AuditPlan
+    public function getWithDetails(int $id): ?AuditPlan
     {
-        return $this->newQuery()
-            ->with('auditAssets')
-            ->find($auditPlanId);
+        return $this->model->with(['assignments.location', 'assignments.auditor', 'auditAssets.asset'])
+            ->find($id);
     }
 
     /**
-     * Get audit plans with corrective actions.
+     * Get audit plan summary.
      */
-    public function getWithCorrectiveActions(int $auditPlanId): ?AuditPlan
+    public function getSummary(int $id): ?array
     {
-        return $this->newQuery()
-            ->with('correctiveActions')
-            ->find($auditPlanId);
-    }
+        $auditPlan = $this->find($id);
+        if (!$auditPlan) {
+            return null;
+        }
 
-    /**
-     * Get audit plan statistics.
-     */
-    public function getStatistics(): array
-    {
-        $total = $this->count();
-        $active = $this->getActive()->count();
-        $overdue = $this->getOverdue()->count();
-        $completed = $this->getByStatus('Completed')->count();
-
-        $byStatus = $this->newQuery()
-            ->selectRaw('status, COUNT(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status')
-            ->toArray();
-
-        return [
-            'total' => $total,
-            'active' => $active,
-            'overdue' => $overdue,
-            'completed' => $completed,
-            'by_status' => $byStatus,
-        ];
+        return $auditPlan->getAuditSummary();
     }
 }

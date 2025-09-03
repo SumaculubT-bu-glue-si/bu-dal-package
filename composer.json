@@ -1,40 +1,39 @@
 {
-    "name": "your-company/laravel-graphql-dal",
-    "description": "A Laravel package providing GraphQL Data Access Layer with database management, repository pattern, and GraphQL integration",
+    "name": "bu/dal-package",
+    "description": "Business Unit Data Access Layer Package - GraphQL + Database management for Laravel",
     "type": "library",
     "license": "MIT",
     "keywords": ["laravel", "graphql", "database", "dal", "repository", "lighthouse"],
     "authors": [
         {
-            "name": "Your Company",
-            "email": "dev@yourcompany.com"
+            "name": "Business Unit",
+            "email": "dev@businessunit.com"
         }
     ],
     "require": {
         "php": "^8.2",
-        "laravel/framework": "^11.0",
+        "laravel/framework": "^11.0|^12.0",
         "nuwave/lighthouse": "^6.62",
         "doctrine/dbal": "^4.3"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.5.3",
-        "mockery/mockery": "^1.6",
-        "orchestra/testbench": "^9.0"
+        "mockery/mockery": "^1.6"
     },
     "autoload": {
         "psr-4": {
-            "YourCompany\\GraphQLDAL\\": "src/"
+            "Bu\\DAL\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "YourCompany\\GraphQLDAL\\Tests\\": "tests/"
+            "Bu\\DAL\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "YourCompany\\GraphQLDAL\\Providers\\GraphQLDALServiceProvider"
+                "Bu\\DAL\\Providers\\DALServiceProvider"
             ]
         }
     },

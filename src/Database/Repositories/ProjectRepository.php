@@ -1,23 +1,31 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database\Repositories;
+namespace Bu\DAL\Database\Repositories;
 
-use YourCompany\GraphQLDAL\Models\Project;
+use Bu\DAL\Models\Project;
 use Illuminate\Database\Eloquent\Collection;
 
 class ProjectRepository extends BaseRepository
 {
-    protected string $modelClass = Project::class;
+    public function __construct(Project $model)
+    {
+        parent::__construct($model);
+    }
+
+    /**
+     * Find project by name.
+     */
+    public function findByName(string $name): ?Project
+    {
+        return $this->model->where('name', $name)->first();
+    }
 
     /**
      * Get visible projects.
      */
     public function getVisible(): Collection
     {
-        return $this->newQuery()
-            ->where('visible', true)
-            ->orderBy('order')
-            ->get();
+        return $this->model->where('visible', true)->orderBy('order')->get();
     }
 
     /**
@@ -25,33 +33,32 @@ class ProjectRepository extends BaseRepository
      */
     public function searchByName(string $name): Collection
     {
-        return $this->newQuery()
-            ->where('name', 'like', "%{$name}%")
-            ->get();
+        return $this->model->where('name', 'like', "%{$name}%")->get();
     }
 
     /**
-     * Get projects ordered by display order.
+     * Upsert project by name.
      */
-    public function getOrdered(): Collection
+    public function upsertByName(array $data): Project
     {
-        return $this->newQuery()
-            ->orderBy('order')
-            ->orderBy('name')
-            ->get();
+        return $this->model->updateOrCreate(
+            ['name' => $data['name']],
+            $data
+        );
     }
 
     /**
-     * Get project statistics.
+     * Bulk upsert projects.
      */
-    public function getStatistics(): array
+    public function bulkUpsert(array $projects): Collection
     {
-        $total = $this->count();
-        $visible = $this->newQuery()->where('visible', true)->count();
+        $results = new Collection();
 
-        return [
-            'total' => $total,
-            'visible' => $visible,
-        ];
+        foreach ($projects as $projectData) {
+            $project = $this->upsertByName($projectData);
+            $results->push($project);
+        }
+
+        return $results;
     }
 }

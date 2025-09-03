@@ -1,163 +1,194 @@
-# Laravel GraphQL DAL Package
+# BU DAL Package
 
-A comprehensive Laravel package that provides a GraphQL Data Access Layer (DAL) with database management, repository pattern, and GraphQL integration for asset management systems.
+A comprehensive Laravel package that provides a Data Access Layer (DAL) with GraphQL and REST API support for business applications. This package extracts database operations, repository patterns, and API functionality into a reusable component.
 
 ## Features
 
-- **Database Management**: Advanced database connection management with failover support
-- **Transaction Management**: Robust transaction handling with savepoint support
-- **Repository Pattern**: Clean abstraction layer for database operations
+- **Database Management**: Advanced database connection management with MySQL support
+- **Repository Pattern**: Clean separation of data access logic
 - **GraphQL Integration**: Complete GraphQL API with queries, mutations, and schema
-- **Asset Management**: Full asset lifecycle management with audit capabilities
-- **Employee Management**: Employee tracking and asset assignments
-- **Location Management**: Multi-location asset tracking
-- **Audit System**: Comprehensive audit trails and corrective actions
-- **MySQL Support**: Optimized for MySQL via XAMPP
+- **REST API**: Automatic REST API endpoints for all models
+- **Transaction Management**: Automatic transaction handling with rollback support
+- **Audit System**: Comprehensive audit tracking and notification system
+- **Asset Management**: Complete asset lifecycle management
+- **Employee Management**: Employee and user management system
+- **Location & Project Management**: Multi-location and project support
+
+## Requirements
+
+- PHP 8.2 or higher
+- Laravel 11.x or 12.x
+- MySQL 5.7 or higher
+- Composer
 
 ## Installation
 
-### Via Composer
+### Step 1: Install via Composer
 
-```bash
-composer require your-company/laravel-graphql-dal
-```
-
-### Manual Installation
-
-1. Clone or download this package to your Laravel project
-2. Add the package to your `composer.json`:
+Add the repository to your `composer.json`:
 
 ```json
 {
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/izuminaoki2025/bu-dal-package.git"
+    }
+  ],
   "require": {
-    "your-company/laravel-graphql-dal": "dev-main"
-  },
+    "bu/dal-package": "dev-main"
+  }
+}
+```
+
+Then run:
+
+```bash
+composer require bu/dal-package:dev-main
+```
+
+Or install directly:
+
+```bash
+composer require bu/dal-package:dev-main --repository='{"type":"vcs","url":"https://github.com/izuminaoki2025/bu-dal-package.git"}'
+```
+
+### Alternative: Manual Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/izuminaoki2025/bu-dal-package.git
+```
+
+2. Add to your `composer.json`:
+
+```json
+{
   "repositories": [
     {
       "type": "path",
-      "url": "./laravel-graphql-dal-package"
+      "url": "./bu-dal-package"
     }
-  ]
+  ],
+  "require": {
+    "bu/dal-package": "*"
+  }
 }
 ```
 
 3. Run `composer install`
 
-## Configuration
-
-### Publish Configuration Files
+### Step 2: Publish Configuration
 
 ```bash
-php artisan vendor:publish --tag=graphql-dal-config
+php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-config"
 ```
 
-This will publish:
-
-- `config/graphql-dal.php` - Main package configuration
-- `config/database-dal.php` - Database-specific configuration
-
-### Publish Migrations
-
-```bash
-php artisan vendor:publish --tag=graphql-dal-migrations
-```
-
-### Publish GraphQL Schema
-
-```bash
-php artisan vendor:publish --tag=graphql-dal-schema
-```
-
-### Environment Variables
+### Step 3: Configure Environment Variables
 
 Add these to your `.env` file:
 
 ```env
-# Database Configuration (MySQL via XAMPP)
+# Database Configuration (Required)
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=your_database_name
 DB_USERNAME=root
-DB_PASSWORD=
+DB_PASSWORD=your_password
 
-# GraphQL DAL Configuration
-GRAPHQL_DAL_CACHE_ENABLED=false
-GRAPHQL_DAL_LOGGING_ENABLED=false
-GRAPHQL_DAL_CONNECTION_POOLING=true
-GRAPHQL_DAL_MAX_CONNECTIONS=10
+# DAL Package Configuration (Optional)
+DAL_DEFAULT_CONNECTION=mysql
+DAL_CACHE_ENABLED=false
+DAL_GRAPHQL_ENABLED=true
+DAL_LOGGING_ENABLED=true
+```
+
+### Step 4: Publish and Run Migrations
+
+```bash
+php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-migrations"
+php artisan migrate
+```
+
+### Step 5: Publish GraphQL Schema
+
+```bash
+php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-graphql"
+```
+
+### Step 6: Configure Lighthouse (GraphQL)
+
+```bash
+php artisan vendor:publish --provider="Nuwave\Lighthouse\LighthouseServiceProvider" --tag="lighthouse-config"
+```
+
+Update `config/lighthouse.php` to include the package namespaces:
+
+```php
+'namespaces' => [
+    'models' => ['App', 'App\\Models', 'Bu\\DAL\\Models'],
+    'queries' => ['App\\GraphQL\\Queries', 'Bu\\DAL\\GraphQL\\Queries'],
+    'mutations' => ['App\\GraphQL\\Mutations', 'Bu\\DAL\\GraphQL\\Mutations'],
+    'subscriptions' => ['App\\GraphQL\\Subscriptions', 'Bu\\DAL\\GraphQL\\Subscriptions'],
+    'types' => ['App\\GraphQL\\Types', 'Bu\\DAL\\GraphQL\\Types'],
+    'interfaces' => ['App\\GraphQL\\Interfaces', 'Bu\\DAL\\GraphQL\\Interfaces'],
+    'unions' => ['App\\GraphQL\\Unions', 'Bu\\DAL\\GraphQL\\Unions'],
+    'scalars' => ['App\\GraphQL\\Scalars', 'Bu\\DAL\\GraphQL\\Scalars'],
+    'directives' => ['App\\GraphQL\\Directives', 'Bu\\DAL\\GraphQL\\Directives'],
+    'validators' => ['App\\GraphQL\\Validators', 'Bu\\DAL\\GraphQL\\Validators'],
+],
+```
+
+### Step 7: Update Lighthouse Configuration
+
+Update `config/lighthouse.php` to set the GraphQL endpoint:
+
+```php
+'route' => [
+    'uri' => '/api/graphql',
+],
+```
+
+### Step 8: Clear Caches
+
+```bash
+php artisan config:clear
+php artisan route:clear
+php artisan cache:clear
 ```
 
 ## Usage
 
-### Database Operations
+### REST API Endpoints
 
-The package provides a clean repository pattern for database operations:
+The package automatically provides these REST API endpoints:
 
-```php
-use YourCompany\GraphQLDAL\Database\Repositories\AssetRepository;
-
-class YourService
-{
-    public function __construct(
-        private AssetRepository $assetRepository
-    ) {}
-
-    public function createAsset(array $data)
-    {
-        return $this->assetRepository->create($data);
-    }
-
-    public function findAssetByAssetId(string $assetId)
-    {
-        return $this->assetRepository->findByAssetId($assetId);
-    }
-
-    public function getAssetsByLocation(string $location)
-    {
-        return $this->assetRepository->getByLocation($location);
-    }
-}
-```
-
-### Transaction Management
-
-```php
-use YourCompany\GraphQLDAL\Database\TransactionManager;
-
-class YourService
-{
-    public function __construct(
-        private TransactionManager $transactionManager
-    ) {}
-
-    public function complexOperation()
-    {
-        return $this->transactionManager->transaction(function () {
-            // Your database operations here
-            // Automatic rollback on failure
-        });
-    }
-}
-```
+- `GET /api/locations` - Get all locations
+- `GET /api/employees` - Get all employees
+- `GET /api/assets` - Get all assets
+- `GET /api/projects` - Get all projects
+- `GET /api/audit-plans` - Get all audit plans
+- `GET /api/audit-assets` - Get all audit assets
+- `GET /api/audit-assignments` - Get all audit assignments
+- `GET /api/corrective-actions` - Get all corrective actions
 
 ### GraphQL API
 
-The package provides a complete GraphQL API. Access it at `/graphql` endpoint.
+Access the GraphQL playground at: `http://your-app.com/api/graphql`
 
 #### Example Queries
 
 ```graphql
-# Get all assets with filtering
-query GetAssets($type: String, $statuses: [String]) {
-  assets(type: $type, statuses: $statuses) {
+# Get all assets with pagination
+query {
+  assets(first: 10) {
     data {
       id
       asset_id
       type
       hostname
-      manufacturer
-      model
       location
       status
       employee {
@@ -166,21 +197,35 @@ query GetAssets($type: String, $statuses: [String]) {
       }
     }
     paginatorInfo {
-      total
       currentPage
       lastPage
+      total
+    }
+  }
+}
+
+# Get employees by location
+query {
+  employees(where: { location: { eq: "Tokyo" } }) {
+    data {
+      id
+      employee_id
+      name
+      email
+      location
     }
   }
 }
 
 # Get locations
-query GetLocations {
+query {
   locations {
-    id
-    name
-    address
-    city
-    status
+    data {
+      id
+      name
+      address
+      status
+    }
   }
 }
 ```
@@ -188,104 +233,303 @@ query GetLocations {
 #### Example Mutations
 
 ```graphql
-# Create or update an asset
-mutation UpsertAsset($asset: AssetInput!) {
-  upsertAsset(asset: $asset) {
+# Create/Update an asset
+mutation {
+  upsertAsset(
+    asset: {
+      asset_id: "PC001"
+      type: "laptop"
+      hostname: "workstation-01"
+      manufacturer: "Dell"
+      model: "Latitude 5520"
+      location: "Tokyo"
+      status: "利用中"
+    }
+  ) {
     id
     asset_id
     type
     hostname
-    manufacturer
-    model
-    location
-    status
   }
 }
 
 # Bulk upsert assets
-mutation BulkUpsertAssets($assets: [AssetInput!]!) {
-  bulkUpsertAssets(assets: $assets) {
+mutation {
+  bulkUpsertAssets(
+    assets: [
+      { asset_id: "PC002", type: "desktop", hostname: "workstation-02" }
+      { asset_id: "PC003", type: "laptop", hostname: "workstation-03" }
+    ]
+  ) {
     id
     asset_id
-    type
   }
 }
+
+# Create an employee
+mutation {
+  upsertEmployee(
+    employee: {
+      employee_id: "EMP001"
+      name: "John Doe"
+      email: "john.doe@company.com"
+      location: "Tokyo"
+    }
+  ) {
+    id
+    employee_id
+    name
+  }
+}
+```
+
+### Repository Pattern Usage
+
+```php
+use Bu\DAL\Database\Repositories\AssetRepository;
+use Bu\DAL\Database\Repositories\EmployeeRepository;
+use Bu\DAL\Database\Repositories\LocationRepository;
+
+// Asset operations
+$assetRepo = app(AssetRepository::class);
+
+// Find asset by asset_id
+$asset = $assetRepo->findByAssetId('PC001');
+
+// Upsert asset
+$asset = $assetRepo->upsertByAssetId([
+    'asset_id' => 'PC001',
+    'type' => 'laptop',
+    'hostname' => 'workstation-01',
+    'location' => 'Tokyo',
+    'status' => '利用中'
+]);
+
+// Search assets with filters
+$assets = $assetRepo->search([
+    'type' => 'laptop',
+    'statuses' => ['利用中', '保管中'],
+    'locations' => ['Tokyo', 'Osaka']
+]);
+
+// Employee operations
+$employeeRepo = app(EmployeeRepository::class);
+
+// Find employee by employee_id
+$employee = $employeeRepo->findByEmployeeId('EMP001');
+
+// Get employees by location
+$employees = $employeeRepo->getByLocation('Tokyo');
+
+// Location operations
+$locationRepo = app(LocationRepository::class);
+
+// Get all active locations
+$locations = $locationRepo->getActive();
+```
+
+### Database Manager Usage
+
+```php
+use Bu\DAL\Database\DatabaseManager;
+
+$dbManager = app(DatabaseManager::class);
+
+// Execute with transaction
+$result = $dbManager->transaction(function() {
+    // Your database operations here
+    $asset = Asset::create($data);
+    $employee = Employee::create($employeeData);
+
+    return $asset;
+});
+
+// Test connection
+if ($dbManager->testConnection()) {
+    echo "Database connection successful!";
+}
+
+// Get database info
+$info = $dbManager->getDatabaseInfo();
+echo "Database size: " . $info['size'];
+```
+
+### Audit System Usage
+
+```php
+use Bu\DAL\Services\AuditNotificationService;
+
+$auditService = app(AuditNotificationService::class);
+
+// Send audit notifications
+$sentCount = $auditService->sendInitialNotifications(
+    $auditPlan,
+    $auditorIds,
+    $locationIds
+);
+
+// Get audit statistics
+$stats = $auditService->getAuditStatistics($auditPlanId);
 ```
 
 ## Models
 
 The package includes the following models:
 
-- **Asset**: IT asset management with full lifecycle tracking
+- **Asset**: Asset management with full lifecycle tracking
 - **Employee**: Employee information and asset assignments
-- **Location**: Physical locations for assets
+- **Location**: Multi-location support
 - **Project**: Project management
-- **User**: User authentication
+- **User**: User authentication and management
 - **AuditPlan**: Audit planning and management
-- **AuditAsset**: Individual asset audit records
-- **AuditAssignment**: Auditor assignments
-- **CorrectiveAction**: Corrective action tracking
+- **AuditAsset**: Individual asset audit tracking
+- **AuditAssignment**: Auditor-location assignments
+- **CorrectiveAction**: Issue tracking and resolution
 - **CorrectiveActionAssignment**: Action assignments
-- **AuditLog**: Comprehensive audit logging
-
-## Repositories
-
-Each model has a corresponding repository with methods for:
-
-- Basic CRUD operations
-- Advanced filtering and searching
-- Bulk operations
-- Statistics and reporting
-- Relationship management
 
 ## Database Schema
 
-The package includes migrations for all tables:
+The package creates the following tables:
 
-- `assets` - Main asset table
-- `employees` - Employee information
-- `locations` - Location data
-- `projects` - Project information
+- `assets` - Asset information
+- `employees` - Employee data
+- `locations` - Location information
+- `projects` - Project data
 - `users` - User accounts
 - `audit_plans` - Audit planning
-- `audit_assets` - Asset audit records
+- `audit_assets` - Asset audit tracking
 - `audit_assignments` - Auditor assignments
-- `corrective_actions` - Corrective actions
+- `corrective_actions` - Issue tracking
 - `corrective_action_assignments` - Action assignments
-- `audit_logs` - Audit trail
+- `audit_logs` - Audit logging
 
-## Testing
+## Testing Your Installation
 
-Run the package tests:
+### Test REST API
 
 ```bash
-composer test
+# Test locations endpoint
+curl http://localhost:8000/api/locations
+
+# Test employees endpoint
+curl http://localhost:8000/api/employees
+
+# Test assets endpoint
+curl http://localhost:8000/api/assets
+```
+
+### Test GraphQL
+
+```bash
+# Test GraphQL introspection
+curl -X POST http://localhost:8000/api/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ __schema { types { name } } }"}'
+
+# Test assets query
+curl -X POST http://localhost:8000/api/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ assets { data { id asset_id } } }"}'
+```
+
+### Test Package Services
+
+Create a test route in `routes/web.php`:
+
+```php
+Route::get('/test-package', function () {
+    try {
+        $dbManager = app(\Bu\DAL\Database\DatabaseManager::class);
+        $assetRepo = app(\Bu\DAL\Database\Repositories\AssetRepository::class);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Package is working correctly!',
+            'database_manager' => get_class($dbManager),
+            'asset_repository' => get_class($assetRepo),
+            'timestamp' => now()
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'timestamp' => now()
+        ], 500);
+    }
+});
+```
+
+Then visit: `http://localhost:8000/test-package`
+
+## Troubleshooting
+
+### Common Issues
+
+1. **GraphQL endpoint not found**
+
+   - Ensure Lighthouse is properly configured
+   - Check that the route is set to `/api/graphql`
+   - Clear route cache: `php artisan route:clear`
+
+2. **REST API endpoints not working**
+
+   - Ensure the package service provider is registered
+   - Check that API routes are enabled in `bootstrap/app.php`
+   - Clear route cache: `php artisan route:clear`
+
+3. **Database connection issues**
+
+   - Verify your `.env` database configuration
+   - Ensure MySQL is running
+   - Test connection: `php artisan tinker` then `DB::connection()->getPdo()`
+
+4. **Migration errors**
+   - Ensure database exists
+   - Check database permissions
+   - Run migrations individually if needed
+
+### Debug Mode
+
+Enable debug mode in your `.env`:
+
+```env
+APP_DEBUG=true
+LOG_LEVEL=debug
 ```
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Make your changes
-4. Add tests
-5. Submit a pull request
+4. Add tests for new functionality
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to the branch: `git push origin feature/amazing-feature`
+7. Submit a pull request
 
 ## License
 
-This package is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This package is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Support
 
-For support and questions, please open an issue in the repository.
+For support and questions:
+
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation
 
 ## Changelog
 
-### v1.0.0
+### Version 1.0.0
 
 - Initial release
-- Complete asset management system
-- GraphQL API integration
-- Repository pattern implementation
+- Complete DAL implementation
+- GraphQL API support
+- REST API endpoints
+- Repository pattern
 - Transaction management
 - Audit system
-- MySQL support via XAMPP
+- Asset management
+- Employee management
+- Location and project support

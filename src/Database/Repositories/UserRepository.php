@@ -1,20 +1,23 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database\Repositories;
+namespace Bu\DAL\Database\Repositories;
 
-use YourCompany\GraphQLDAL\Models\User;
+use Bu\DAL\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
 class UserRepository extends BaseRepository
 {
-    protected string $modelClass = User::class;
+    public function __construct(User $model)
+    {
+        parent::__construct($model);
+    }
 
     /**
      * Find user by email.
      */
     public function findByEmail(string $email): ?User
     {
-        return $this->newQuery()->where('email', $email)->first();
+        return $this->model->where('email', $email)->first();
     }
 
     /**
@@ -22,9 +25,7 @@ class UserRepository extends BaseRepository
      */
     public function searchByName(string $name): Collection
     {
-        return $this->newQuery()
-            ->where('name', 'like', "%{$name}%")
-            ->get();
+        return $this->model->where('name', 'like', "%{$name}%")->get();
     }
 
     /**
@@ -32,22 +33,14 @@ class UserRepository extends BaseRepository
      */
     public function getVerified(): Collection
     {
-        return $this->newQuery()
-            ->whereNotNull('email_verified_at')
-            ->get();
+        return $this->model->whereNotNull('email_verified_at')->get();
     }
 
     /**
-     * Get user statistics.
+     * Get unverified users.
      */
-    public function getStatistics(): array
+    public function getUnverified(): Collection
     {
-        $total = $this->count();
-        $verified = $this->getVerified()->count();
-
-        return [
-            'total' => $total,
-            'verified' => $verified,
-        ];
+        return $this->model->whereNull('email_verified_at')->get();
     }
 }

@@ -1,86 +1,130 @@
 <?php
 
 /**
- * Installation script for Laravel GraphQL DAL Package
- * 
- * This script helps set up the package in a Laravel application
+ * Simple installation test script for BU DAL Package
+ * This script tests basic package functionality without requiring a full Laravel installation
  */
 
-echo "Laravel GraphQL DAL Package Installation\n";
-echo "========================================\n\n";
+require_once __DIR__ . '/vendor/autoload.php';
 
-// Check if we're in a Laravel project
-if (!file_exists('artisan')) {
-    echo "❌ Error: This doesn't appear to be a Laravel project.\n";
-    echo "Please run this script from the root of your Laravel application.\n";
-    exit(1);
+echo "BU DAL Package Installation Test\n";
+echo "================================\n\n";
+
+// Test 1: Check if classes can be loaded
+echo "1. Testing class autoloading...\n";
+
+try {
+    $dbManager = new \Bu\DAL\Database\DatabaseManager();
+    echo "   ✓ DatabaseManager loaded successfully\n";
+} catch (Exception $e) {
+    echo "   ✗ Failed to load DatabaseManager: " . $e->getMessage() . "\n";
 }
 
-echo "✅ Laravel project detected\n";
-
-// Check if composer.json exists
-if (!file_exists('composer.json')) {
-    echo "❌ Error: composer.json not found\n";
-    exit(1);
+try {
+    $assetRepo = new \Bu\DAL\Database\Repositories\AssetRepository(new \Bu\DAL\Models\Asset());
+    echo "   ✓ AssetRepository loaded successfully\n";
+} catch (Exception $e) {
+    echo "   ✗ Failed to load AssetRepository: " . $e->getMessage() . "\n";
 }
 
-echo "✅ composer.json found\n";
+try {
+    $employeeRepo = new \Bu\DAL\Database\Repositories\EmployeeRepository(new \Bu\DAL\Models\Employee());
+    echo "   ✓ EmployeeRepository loaded successfully\n";
+} catch (Exception $e) {
+    echo "   ✗ Failed to load EmployeeRepository: " . $e->getMessage() . "\n";
+}
 
-// Check if the package is already installed
-$composerJson = json_decode(file_get_contents('composer.json'), true);
-$packageName = 'yourcompany/laravel-graphql-dal';
+// Test 2: Check if models can be instantiated
+echo "\n2. Testing model instantiation...\n";
 
-if (isset($composerJson['require'][$packageName])) {
-    echo "✅ Package already installed\n";
-} else {
-    echo "📦 Adding package to composer.json...\n";
+$models = [
+    'Asset' => \Bu\DAL\Models\Asset::class,
+    'Employee' => \Bu\DAL\Models\Employee::class,
+    'Location' => \Bu\DAL\Models\Location::class,
+    'Project' => \Bu\DAL\Models\Project::class,
+    'User' => \Bu\DAL\Models\User::class,
+    'AuditPlan' => \Bu\DAL\Models\AuditPlan::class,
+    'AuditAsset' => \Bu\DAL\Models\AuditAsset::class,
+    'AuditAssignment' => \Bu\DAL\Models\AuditAssignment::class,
+    'CorrectiveAction' => \Bu\DAL\Models\CorrectiveAction::class,
+    'CorrectiveActionAssignment' => \Bu\DAL\Models\CorrectiveActionAssignment::class,
+];
 
-    if (!isset($composerJson['require'])) {
-        $composerJson['require'] = [];
+foreach ($models as $name => $class) {
+    try {
+        $model = new $class();
+        echo "   ✓ {$name} model instantiated successfully\n";
+    } catch (Exception $e) {
+        echo "   ✗ Failed to instantiate {$name}: " . $e->getMessage() . "\n";
     }
-
-    $composerJson['require'][$packageName] = 'dev-main';
-
-    file_put_contents('composer.json', json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-    echo "✅ Package added to composer.json\n";
 }
 
-// Check if service provider is registered
-$configApp = 'config/app.php';
-if (file_exists($configApp)) {
-    $appConfig = file_get_contents($configApp);
-    if (strpos($appConfig, 'YourCompany\\GraphQLDAL\\Providers\\GraphQLDALServiceProvider') !== false) {
-        echo "✅ Service provider already registered\n";
+// Test 3: Check if GraphQL classes can be loaded
+echo "\n3. Testing GraphQL classes...\n";
+
+$graphqlClasses = [
+    'AssetQueries' => \Bu\DAL\GraphQL\Queries\AssetQueries::class,
+    'EmployeeQueries' => \Bu\DAL\GraphQL\Queries\EmployeeQueries::class,
+    'LocationQueries' => \Bu\DAL\GraphQL\Queries\LocationQueries::class,
+    'AssetMutations' => \Bu\DAL\GraphQL\Mutations\AssetMutations::class,
+    'EmployeeMutations' => \Bu\DAL\GraphQL\Mutations\EmployeeMutations::class,
+    'LocationMutations' => \Bu\DAL\GraphQL\Mutations\LocationMutations::class,
+];
+
+foreach ($graphqlClasses as $name => $class) {
+    try {
+        if (class_exists($class)) {
+            echo "   ✓ {$name} class exists\n";
+        } else {
+            echo "   ✗ {$name} class not found\n";
+        }
+    } catch (Exception $e) {
+        echo "   ✗ Error checking {$name}: " . $e->getMessage() . "\n";
+    }
+}
+
+// Test 4: Check if configuration files exist
+echo "\n4. Testing configuration files...\n";
+
+$configFiles = [
+    'composer.json' => __DIR__ . '/composer.json',
+    'config/dal.php' => __DIR__ . '/config/dal.php',
+    'graphql/schema.graphql' => __DIR__ . '/graphql/schema.graphql',
+    'README.md' => __DIR__ . '/README.md',
+];
+
+foreach ($configFiles as $name => $path) {
+    if (file_exists($path)) {
+        echo "   ✓ {$name} exists\n";
     } else {
-        echo "⚠️  Service provider not found in config/app.php\n";
-        echo "Please add the following to your config/app.php providers array:\n";
-        echo "YourCompany\\GraphQLDAL\\Providers\\GraphQLDALServiceProvider::class,\n\n";
+        echo "   ✗ {$name} missing\n";
+    }
+}
+
+// Test 5: Check if migrations exist
+echo "\n5. Testing migration files...\n";
+
+$migrationDir = __DIR__ . '/database/migrations';
+if (is_dir($migrationDir)) {
+    $migrations = glob($migrationDir . '/*.php');
+    echo "   ✓ Found " . count($migrations) . " migration files\n";
+
+    if (count($migrations) > 0) {
+        foreach (array_slice($migrations, 0, 3) as $migration) {
+            echo "     - " . basename($migration) . "\n";
+        }
+        if (count($migrations) > 3) {
+            echo "     ... and " . (count($migrations) - 3) . " more\n";
+        }
     }
 } else {
-    echo "⚠️  config/app.php not found\n";
+    echo "   ✗ Migration directory not found\n";
 }
 
-// Check if GraphQL config exists
-if (file_exists('config/graphql.php')) {
-    echo "✅ GraphQL configuration found\n";
-} else {
-    echo "⚠️  GraphQL configuration not found\n";
-    echo "Please ensure you have rebing/graphql-laravel installed and configured\n";
-}
-
-// Check if database configuration exists
-if (file_exists('config/database.php')) {
-    echo "✅ Database configuration found\n";
-} else {
-    echo "❌ Database configuration not found\n";
-    exit(1);
-}
-
-echo "\n📋 Next Steps:\n";
-echo "1. Run: composer install\n";
-echo "2. Run: php artisan vendor:publish --provider=\"YourCompany\\GraphQLDAL\\Providers\\GraphQLDALServiceProvider\"\n";
-echo "3. Run: php artisan migrate\n";
-echo "4. Configure your .env file with database settings\n";
-echo "5. Test the GraphQL endpoint at /graphql\n\n";
-
-echo "🎉 Installation script completed!\n";
+echo "\nInstallation test completed!\n";
+echo "\nTo use this package in a Laravel project:\n";
+echo "1. Add it to your composer.json\n";
+echo "2. Run: composer install\n";
+echo "3. Publish configuration: php artisan vendor:publish --provider=\"Bu\\DAL\\Providers\\DALServiceProvider\"\n";
+echo "4. Run migrations: php artisan migrate\n";
+echo "5. Configure your .env file with database settings\n";

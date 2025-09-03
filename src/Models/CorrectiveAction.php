@@ -1,6 +1,6 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Models;
+namespace Bu\DAL\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -113,7 +113,7 @@ class CorrectiveAction extends Model
     /**
      * Mark the action as completed and check if audit asset should be updated.
      */
-    public function markAsCompleted(string $notes = null, string $resolutionStatus = null): bool
+    public function markAsCompleted(?string $notes = null, ?string $resolutionStatus = null): bool
     {
         $this->update([
             'status' => 'completed',
@@ -165,7 +165,7 @@ class CorrectiveAction extends Model
     /**
      * Bulk update multiple corrective actions status.
      */
-    public static function bulkUpdateStatus(array $actionIds, string $status, string $notes = null): array
+    public static function bulkUpdateStatus(array $actionIds, string $status, ?string $notes = null): array
     {
         $results = [];
 

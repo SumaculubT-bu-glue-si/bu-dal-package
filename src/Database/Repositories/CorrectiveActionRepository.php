@@ -1,20 +1,23 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database\Repositories;
+namespace Bu\DAL\Database\Repositories;
 
-use YourCompany\GraphQLDAL\Models\CorrectiveAction;
+use Bu\DAL\Models\CorrectiveAction;
 use Illuminate\Database\Eloquent\Collection;
 
 class CorrectiveActionRepository extends BaseRepository
 {
-    protected string $modelClass = CorrectiveAction::class;
+    public function __construct(CorrectiveAction $model)
+    {
+        parent::__construct($model);
+    }
 
     /**
      * Get corrective actions by audit plan.
      */
     public function getByAuditPlan(int $auditPlanId): Collection
     {
-        return $this->newQuery()->where('audit_plan_id', $auditPlanId)->get();
+        return $this->model->where('audit_plan_id', $auditPlanId)->get();
     }
 
     /**
@@ -22,7 +25,7 @@ class CorrectiveActionRepository extends BaseRepository
      */
     public function getByAuditAsset(int $auditAssetId): Collection
     {
-        return $this->newQuery()->where('audit_asset_id', $auditAssetId)->get();
+        return $this->model->where('audit_asset_id', $auditAssetId)->get();
     }
 
     /**
@@ -30,7 +33,7 @@ class CorrectiveActionRepository extends BaseRepository
      */
     public function getByStatus(string $status): Collection
     {
-        return $this->newQuery()->where('status', $status)->get();
+        return $this->model->where('status', $status)->get();
     }
 
     /**
@@ -38,26 +41,15 @@ class CorrectiveActionRepository extends BaseRepository
      */
     public function getByPriority(string $priority): Collection
     {
-        return $this->newQuery()->where('priority', $priority)->get();
+        return $this->model->where('priority', $priority)->get();
     }
 
     /**
-     * Get overdue corrective actions.
+     * Get corrective actions by assignee.
      */
-    public function getOverdue(): Collection
+    public function getByAssignee(string $assignedTo): Collection
     {
-        return $this->newQuery()
-            ->where('due_date', '<', now())
-            ->where('status', '!=', 'completed')
-            ->get();
-    }
-
-    /**
-     * Get completed corrective actions.
-     */
-    public function getCompleted(): Collection
-    {
-        return $this->getByStatus('completed');
+        return $this->model->where('assigned_to', 'like', "%{$assignedTo}%")->get();
     }
 
     /**
@@ -65,38 +57,60 @@ class CorrectiveActionRepository extends BaseRepository
      */
     public function getPending(): Collection
     {
-        return $this->getByStatus('pending');
+        return $this->model->where('status', 'pending')->get();
     }
 
     /**
-     * Get corrective action statistics.
+     * Get in-progress corrective actions.
      */
-    public function getStatistics(): array
+    public function getInProgress(): Collection
     {
-        $total = $this->count();
-        $completed = $this->getCompleted()->count();
-        $pending = $this->getPending()->count();
-        $overdue = $this->getOverdue()->count();
+        return $this->model->where('status', 'in_progress')->get();
+    }
 
-        $byStatus = $this->newQuery()
-            ->selectRaw('status, COUNT(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status')
-            ->toArray();
+    /**
+     * Get completed corrective actions.
+     */
+    public function getCompleted(): Collection
+    {
+        return $this->model->where('status', 'completed')->get();
+    }
 
-        $byPriority = $this->newQuery()
-            ->selectRaw('priority, COUNT(*) as count')
-            ->groupBy('priority')
-            ->pluck('count', 'priority')
-            ->toArray();
+    /**
+     * Get overdue corrective actions.
+     */
+    public function getOverdue(): Collection
+    {
+        return $this->model->overdue()->get();
+    }
 
-        return [
-            'total' => $total,
-            'completed' => $completed,
-            'pending' => $pending,
-            'overdue' => $overdue,
-            'by_status' => $byStatus,
-            'by_priority' => $byPriority,
-        ];
+    /**
+     * Get corrective action with details.
+     */
+    public function getWithDetails(int $id): ?CorrectiveAction
+    {
+        return $this->model->with(['auditAsset.asset', 'auditPlan', 'assignments'])
+            ->find($id);
+    }
+
+    /**
+     * Mark corrective action as completed.
+     */
+    public function markAsCompleted(int $id, ?string $notes = null, ?string $resolutionStatus = null): bool
+    {
+        $action = $this->find($id);
+        if (!$action) {
+            return false;
+        }
+
+        return $action->markAsCompleted($notes, $resolutionStatus);
+    }
+
+    /**
+     * Bulk update corrective actions status.
+     */
+    public function bulkUpdateStatus(array $actionIds, string $status, ?string $notes = null): array
+    {
+        return CorrectiveAction::bulkUpdateStatus($actionIds, $status, $notes);
     }
 }

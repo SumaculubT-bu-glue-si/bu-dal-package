@@ -1,109 +1,120 @@
 <?php
 
-namespace YourCompany\GraphQLDAL\Database;
+namespace Bu\DAL\Database;
 
-use Illuminate\Database\DatabaseManager as LaravelDatabaseManager;
-use Illuminate\Database\ConnectionInterface;
-use YourCompany\GraphQLDAL\Exceptions\DatabaseException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Database\Connection;
+use Bu\DAL\Exceptions\DatabaseException;
+use Bu\DAL\Exceptions\TransactionException;
 
 class DatabaseManager
 {
-    protected LaravelDatabaseManager $dbManager;
+    protected string $defaultConnection;
     protected array $connections = [];
-    protected ?string $defaultConnection = null;
 
-    public function __construct(LaravelDatabaseManager $dbManager)
+    public function __construct()
     {
-        $this->dbManager = $dbManager;
-        $this->defaultConnection = config('database.default');
+        $this->defaultConnection = Config::get('database.default', 'mysql');
+        $this->connections = Config::get('database.connections', []);
     }
 
     /**
-     * Get a database connection instance.
+     * Get a database connection.
      */
-    public function getConnection(?string $name = null): ConnectionInterface
+    public function getConnection(?string $name = null): Connection
     {
-        $name = $name ?: $this->defaultConnection;
+        $connectionName = $name ?? $this->defaultConnection;
 
-        if (!isset($this->connections[$name])) {
-            try {
-                $this->connections[$name] = $this->dbManager->connection($name);
-            } catch (\Exception $e) {
-                throw new DatabaseException("Failed to connect to database '{$name}': " . $e->getMessage());
-            }
+        if (!isset($this->connections[$connectionName])) {
+            throw new DatabaseException("Database connection '{$connectionName}' not configured.");
         }
 
-        return $this->connections[$name];
+        return DB::connection($connectionName);
     }
 
     /**
      * Execute a transaction with automatic rollback on failure.
      */
-    public function transaction(callable $callback, int $attempts = 1)
+    public function transaction(callable $callback, ?string $connection = null)
     {
-        return $this->getConnection()->transaction($callback, $attempts);
+        $connection = $this->getConnection($connection);
+
+        try {
+            return $connection->transaction($callback);
+        } catch (\Exception $e) {
+            throw new TransactionException("Transaction failed: " . $e->getMessage(), 0, $e);
+        }
     }
 
     /**
-     * Begin a new database transaction.
+     * Begin a transaction.
      */
-    public function beginTransaction(): void
+    public function beginTransaction(?string $connection = null): void
     {
-        $this->getConnection()->beginTransaction();
+        $connection = $this->getConnection($connection);
+        $connection->beginTransaction();
     }
 
     /**
-     * Commit the active database transaction.
+     * Commit a transaction.
      */
-    public function commit(): void
+    public function commit(?string $connection = null): void
     {
-        $this->getConnection()->commit();
+        $connection = $this->getConnection($connection);
+        $connection->commit();
     }
 
     /**
-     * Rollback the active database transaction.
+     * Rollback a transaction.
      */
-    public function rollback(): void
+    public function rollback(?string $connection = null): void
     {
-        $this->getConnection()->rollback();
+        $connection = $this->getConnection($connection);
+        $connection->rollback();
     }
 
     /**
-     * Execute a query with automatic retry on connection failure.
+     * Check if currently in a transaction.
      */
-    public function executeWithRetry(callable $callback, int $maxRetries = 3)
+    public function inTransaction(?string $connection = null): bool
     {
+        $connection = $this->getConnection($connection);
+        return $connection->transactionLevel() > 0;
+    }
+
+    /**
+     * Execute a query with retry logic.
+     */
+    public function queryWithRetry(callable $callback, int $maxRetries = 3, ?string $connection = null)
+    {
+        $connection = $this->getConnection($connection);
         $attempts = 0;
-        $lastException = null;
 
         while ($attempts < $maxRetries) {
             try {
-                return $callback($this->getConnection());
+                return $callback($connection);
             } catch (\Exception $e) {
-                $lastException = $e;
                 $attempts++;
 
-                // Clear the connection cache on failure
-                unset($this->connections[$this->defaultConnection]);
-
-                if ($attempts < $maxRetries) {
-                    sleep(1); // Wait 1 second before retry
+                if ($attempts >= $maxRetries) {
+                    throw new DatabaseException("Query failed after {$maxRetries} attempts: " . $e->getMessage(), 0, $e);
                 }
+
+                // Wait before retry (exponential backoff)
+                usleep(pow(2, $attempts) * 100000); // 0.1s, 0.2s, 0.4s
             }
         }
-
-        throw new DatabaseException("Database operation failed after {$maxRetries} attempts: " . $lastException->getMessage());
     }
 
     /**
-     * Get connection health status.
+     * Test database connection.
      */
-    public function isHealthy(?string $connection = null): bool
+    public function testConnection(?string $connection = null): bool
     {
         try {
-            $conn = $this->getConnection($connection);
-            // Use a simple query to test the connection
-            $conn->select('SELECT 1');
+            $connection = $this->getConnection($connection);
+            $connection->getPdo();
             return true;
         } catch (\Exception $e) {
             return false;
@@ -111,26 +122,105 @@ class DatabaseManager
     }
 
     /**
+     * Get connection information.
+     */
+    public function getConnectionInfo(?string $connection = null): array
+    {
+        $connectionName = $connection ?? $this->defaultConnection;
+        $config = $this->connections[$connectionName] ?? [];
+
+        return [
+            'name' => $connectionName,
+            'driver' => $config['driver'] ?? 'unknown',
+            'host' => $config['host'] ?? 'unknown',
+            'database' => $config['database'] ?? 'unknown',
+            'port' => $config['port'] ?? 'unknown',
+        ];
+    }
+
+    /**
      * Get all available connections.
      */
     public function getAvailableConnections(): array
     {
-        return array_keys(config('database.connections', []));
+        return array_keys($this->connections);
     }
 
     /**
-     * Set the default connection.
+     * Set default connection.
      */
     public function setDefaultConnection(string $connection): void
     {
+        if (!isset($this->connections[$connection])) {
+            throw new DatabaseException("Database connection '{$connection}' not configured.");
+        }
+
         $this->defaultConnection = $connection;
+        Config::set('database.default', $connection);
     }
 
     /**
-     * Get the default connection name.
+     * Execute raw SQL query.
      */
-    public function getDefaultConnection(): string
+    public function raw(string $sql, array $bindings = [], ?string $connection = null)
     {
-        return $this->defaultConnection;
+        $connection = $this->getConnection($connection);
+        return $connection->select($sql, $bindings);
+    }
+
+    /**
+     * Get table information.
+     */
+    public function getTableInfo(string $table, ?string $connection = null): array
+    {
+        $connection = $this->getConnection($connection);
+
+        try {
+            $columns = $connection->getSchemaBuilder()->getColumnListing($table);
+            $indexes = $connection->getSchemaBuilder()->getIndexes($table);
+
+            return [
+                'table' => $table,
+                'columns' => $columns,
+                'indexes' => $indexes,
+            ];
+        } catch (\Exception $e) {
+            throw new DatabaseException("Failed to get table info for '{$table}': " . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * Check if table exists.
+     */
+    public function tableExists(string $table, ?string $connection = null): bool
+    {
+        $connection = $this->getConnection($connection);
+        return $connection->getSchemaBuilder()->hasTable($table);
+    }
+
+    /**
+     * Get database size (MySQL specific).
+     */
+    public function getDatabaseSize(?string $connection = null): ?string
+    {
+        /** @var Connection $dbConnection */
+        $dbConnection = $this->getConnection($connection);
+
+        if ($dbConnection->getDriverName() !== 'mysql') {
+            return null;
+        }
+
+        try {
+            $result = $dbConnection->selectOne("
+                SELECT 
+                    ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
+                FROM information_schema.tables 
+                WHERE table_schema = ?
+            ", [$dbConnection->getDatabaseName()]);
+
+            return $result ? $result->size_mb . ' MB' : null;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
