@@ -89,7 +89,7 @@ type Query {
   ): [Asset!]!
     @paginate(
       defaultCount: 100
-      builder: "Bu\\DAL\\GraphQL\\Queries\\AssetQueries@assetsBuilder"
+      builder: "App\\GraphQL\\Queries\\AssetQueries@assetsBuilder"
     )
 
   # Employee queries
@@ -111,7 +111,7 @@ type Query {
   # Location queries
   "Find a single location by ID."
   location(id: ID! @eq): Location
-    @field(resolver: "Bu\\DAL\\GraphQL\\Queries\\LocationQueries@location")
+    @field(resolver: "App\\GraphQL\\Queries\\LocationQueries@location")
 
   "List multiple locations with optional filtering."
   locations(
@@ -119,7 +119,7 @@ type Query {
     status: String @where(operator: "=")
     city: String @where(operator: "like")
   ): [Location!]!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Queries\\LocationQueries@locations")
+    @field(resolver: "App\\GraphQL\\Queries\\LocationQueries@locations")
 
   # Audit queries
   "Find a single audit plan by ID."
@@ -265,7 +265,7 @@ type Asset {
 
   "Employee assigned to this asset."
   employee: Employee
-    @field(resolver: "Bu\\DAL\\GraphQL\\Queries\\AssetQueries@employee")
+    @field(resolver: "App\\GraphQL\\Queries\\AssetQueries@employee")
 
   "Date when usage started."
   usage_start_date: Date
@@ -754,98 +754,94 @@ type Mutation {
   # User mutations
   "Create a new user."
   createUser(user: UserInput!): User!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\UserMutations@create")
+    @field(resolver: "App\\GraphQL\\Mutations\\UserMutations@create")
 
   "Update an existing user."
   updateUser(id: ID!, user: UserInput!): User!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\UserMutations@update")
+    @field(resolver: "App\\GraphQL\\Mutations\\UserMutations@update")
 
   "Delete a user."
   deleteUser(id: ID!): Boolean!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\UserMutations@delete")
+    @field(resolver: "App\\GraphQL\\Mutations\\UserMutations@delete")
 
   # Asset mutations
   "Create or update a single asset by asset_id."
   upsertAsset(asset: AssetInput!): Asset
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\AssetMutations@upsertAsset")
+    @field(resolver: "App\\GraphQL\\Mutations\\AssetMutations@upsertAsset")
 
   "Create or update many assets by asset_id. Returns the upserted assets."
   bulkUpsertAssets(assets: [AssetInput!]!): [Asset!]!
-    @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\AssetMutations@bulkUpsertAssets"
-    )
+    @field(resolver: "App\\GraphQL\\Mutations\\AssetMutations@bulkUpsertAssets")
 
   "Delete an asset by asset_id. Returns true if deleted or did not exist."
   deleteAsset(asset_id: String!): Boolean!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\AssetMutations@deleteAsset")
+    @field(resolver: "App\\GraphQL\\Mutations\\AssetMutations@deleteAsset")
 
   # Employee mutations
   "Create a new employee."
   createEmployee(employee: EmployeeInput!): Employee!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\EmployeeMutations@create")
+    @field(resolver: "App\\GraphQL\\Mutations\\EmployeeMutations@create")
 
   "Update an existing employee."
   updateEmployee(id: ID!, employee: EmployeeInput!): Employee!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\EmployeeMutations@update")
+    @field(resolver: "App\\GraphQL\\Mutations\\EmployeeMutations@update")
 
   "Delete an employee."
   deleteEmployee(id: ID!): Boolean!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\EmployeeMutations@delete")
+    @field(resolver: "App\\GraphQL\\Mutations\\EmployeeMutations@delete")
 
   "Create or update an employee (upsert)."
   upsertEmployee(employee: EmployeeInput!): Employee!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\EmployeeMutations@upsertEmployee"
+      resolver: "App\\GraphQL\\Mutations\\EmployeeMutations@upsertEmployee"
     )
 
   "Create or update many employees (bulk upsert)."
   bulkUpsertEmployees(employees: [EmployeeInput!]!): [Employee!]!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\EmployeeMutations@bulkUpsertEmployees"
+      resolver: "App\\GraphQL\\Mutations\\EmployeeMutations@bulkUpsertEmployees"
     )
 
   # Project mutations
   "Create a new project."
   createProject(project: ProjectInput!): Project!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\ProjectMutations@create")
+    @field(resolver: "App\\GraphQL\\Mutations\\ProjectMutations@create")
 
   "Update an existing project."
   updateProject(id: ID!, project: ProjectInput!): Project!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\ProjectMutations@update")
+    @field(resolver: "App\\GraphQL\\Mutations\\ProjectMutations@update")
 
   "Delete a project."
   deleteProject(id: ID!): Boolean!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\ProjectMutations@delete")
+    @field(resolver: "App\\GraphQL\\Mutations\\ProjectMutations@delete")
 
   "Create or update a project (upsert)."
   upsertProject(project: ProjectInput!): Project!
-    @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\ProjectMutations@upsertProject"
-    )
+    @field(resolver: "App\\GraphQL\\Mutations\\ProjectMutations@upsertProject")
 
   "Create or update many projects (bulk upsert)."
   bulkUpsertProjects(projects: [ProjectInput!]!): [Project!]!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\ProjectMutations@bulkUpsertProjects"
+      resolver: "App\\GraphQL\\Mutations\\ProjectMutations@bulkUpsertProjects"
     )
 
   # Location mutations
   "Create a new location."
   createLocation(location: LocationInput!): Location!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\LocationMutations@create")
+    @field(resolver: "App\\GraphQL\\Mutations\\LocationMutations@create")
 
   "Update an existing location."
   updateLocation(id: ID!, location: LocationInput!): Location!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\LocationMutations@update")
+    @field(resolver: "App\\GraphQL\\Mutations\\LocationMutations@update")
 
   "Delete a location."
   deleteLocation(id: ID!): Boolean!
-    @field(resolver: "Bu\\DAL\\GraphQL\\Mutations\\LocationMutations@delete")
+    @field(resolver: "App\\GraphQL\\Mutations\\LocationMutations@delete")
 
   "Create or update a location (upsert)."
   upsertLocation(location: LocationInput!): Location!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\LocationMutations@upsertLocation"
+      resolver: "App\\GraphQL\\Mutations\\LocationMutations@upsertLocation"
     )
 
   # Audit mutations
@@ -857,10 +853,7 @@ type Mutation {
     description: String
     locations: [ID!]!
     auditors: [ID!]!
-  ): AuditPlan!
-    @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\AuditPlanMutations@createAuditPlan"
-    )
+  ): AuditPlan! @field(resolver: "App\\GraphQL\\Mutations\\CreateAuditPlan")
 
   "Update an existing audit plan."
   updateAuditPlan(
@@ -870,10 +863,7 @@ type Mutation {
     due_date: Date @rules(apply: ["date"])
     status: String @rules(apply: ["in:Planning,In Progress,Completed,Overdue"])
     description: String
-  ): AuditPlan!
-    @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\AuditPlanMutations@updateAuditPlan"
-    )
+  ): AuditPlan! @field(resolver: "App\\GraphQL\\Mutations\\UpdateAuditPlan")
 
   "Update audit asset status."
   updateAuditAsset(
@@ -889,10 +879,7 @@ type Mutation {
     resolved: Boolean
     current_location: String
     current_user: String
-  ): AuditAsset!
-    @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\UpdateAuditAsset@updateAuditAsset"
-    )
+  ): AuditAsset! @field(resolver: "App\\GraphQL\\Mutations\\UpdateAuditAsset")
 
   "Complete an audit assignment."
   completeAuditAssignment(
@@ -901,15 +888,13 @@ type Mutation {
       @rules(apply: ["required", "in:Assigned,In Progress,Completed"])
     notes: String
   ): AuditAssignment!
-    @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\UpdateAuditAssignment@updateAuditAssignment"
-    )
+    @field(resolver: "App\\GraphQL\\Mutations\\UpdateAuditAssignment")
 
   # Corrective Action mutations
   "Create a new corrective action."
   createCorrectiveAction(action: CorrectiveActionInput!): CorrectiveAction!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\CorrectiveActionMutations@create"
+      resolver: "App\\GraphQL\\Mutations\\CorrectiveActionMutations@create"
     )
 
   "Update an existing corrective action."
@@ -918,7 +903,7 @@ type Mutation {
     action: CorrectiveActionInput!
   ): CorrectiveAction!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\CorrectiveActionMutations@update"
+      resolver: "App\\GraphQL\\Mutations\\CorrectiveActionMutations@update"
     )
 
   "Update the status of a corrective action."
@@ -929,7 +914,7 @@ type Mutation {
     notes: String
   ): CorrectiveAction!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\CorrectiveActionMutations@updateStatus"
+      resolver: "App\\GraphQL\\Mutations\\CorrectiveActionMutations@updateStatus"
     )
 
   "Delete a corrective action."
@@ -937,7 +922,7 @@ type Mutation {
     id: ID! @rules(apply: ["required", "exists:corrective_actions,id"])
   ): Boolean!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\CorrectiveActionMutations@delete"
+      resolver: "App\\GraphQL\\Mutations\\CorrectiveActionMutations@delete"
     )
 
   # Corrective Action Assignment mutations
@@ -950,7 +935,7 @@ type Mutation {
     notes: String
   ): CorrectiveActionAssignment!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\CorrectiveActionAssignmentMutations@assign"
+      resolver: "App\\GraphQL\\Mutations\\CorrectiveActionAssignmentMutations@assign"
     )
 
   "Update the status of a corrective action assignment."
@@ -962,6 +947,6 @@ type Mutation {
     progress_notes: String
   ): CorrectiveActionAssignment!
     @field(
-      resolver: "Bu\\DAL\\GraphQL\\Mutations\\CorrectiveActionAssignmentMutations@updateStatus"
+      resolver: "App\\GraphQL\\Mutations\\CorrectiveActionAssignmentMutations@updateStatus"
     )
 }

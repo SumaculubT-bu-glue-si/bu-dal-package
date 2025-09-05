@@ -74,7 +74,7 @@ class AuditPlanMutations
 
             // Validate that locations exist
             $locationIds = $args['locations'];
-            $existingLocations = $this->locationRepository->where('id', 'in', $locationIds)->pluck('id')->toArray();
+            $existingLocations = $this->locationRepository->whereIn('id', $locationIds)->pluck('id')->toArray();
             $missingLocations = array_diff($locationIds, $existingLocations);
             if (!empty($missingLocations)) {
                 throw new \Exception('Invalid location IDs: ' . implode(', ', $missingLocations));
@@ -82,7 +82,7 @@ class AuditPlanMutations
 
             // Validate that auditors exist
             $auditorIds = $args['auditors'];
-            $existingAuditors = $this->employeeRepository->where('id', 'in', $auditorIds)->pluck('id')->toArray();
+            $existingAuditors = $this->employeeRepository->whereIn('id', $auditorIds)->pluck('id')->toArray();
             $missingAuditors = array_diff($auditorIds, $existingAuditors);
             if (!empty($missingAuditors)) {
                 throw new \Exception('Invalid auditor IDs: ' . implode(', ', $missingAuditors));

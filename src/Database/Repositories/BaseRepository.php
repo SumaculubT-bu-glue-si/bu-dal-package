@@ -102,6 +102,14 @@ abstract class BaseRepository
     }
 
     /**
+     * Get records where column is in array of values.
+     */
+    public function whereIn(string $column, array $values): Collection
+    {
+        return $this->model->whereIn($column, $values)->get();
+    }
+
+    /**
      * Count records with conditions.
      */
     public function count(?string $column = null, $operator = null, $value = null): int

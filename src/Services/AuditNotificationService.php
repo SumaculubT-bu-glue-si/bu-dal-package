@@ -10,115 +10,111 @@ use Bu\DAL\Database\Repositories\EmployeeRepository;
 use Bu\DAL\Database\DatabaseManager;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use App\Mail\AuditPlanNotificationEmail;
+use App\Mail\AuditReminderEmail;
 
 class AuditNotificationService
 {
-    public function __construct(
-        private LocationRepository $locationRepository,
-        private EmployeeRepository $employeeRepository,
-        private DatabaseManager $databaseManager
-    ) {}
-
     /**
      * Send initial audit notifications to all employees with assets in audited locations
      */
     public function sendInitialNotifications(AuditPlan $auditPlan, array $auditorIds, array $locationIds)
     {
-        return $this->databaseManager->transaction(function () use ($auditPlan, $auditorIds, $locationIds) {
-            try {
-                Log::info('Starting to send initial audit notifications', [
+        try {
+            Log::info('Starting to send initial audit notifications', [
+                'audit_plan_id' => $auditPlan->id,
+                'audit_plan_name' => $auditPlan->name,
+                'auditor_ids' => $auditorIds,
+                'location_ids' => $locationIds
+            ]);
+
+            // Get location names from IDs
+            $locationNames = \App\Models\Location::whereIn('id', $locationIds)->pluck('name')->toArray();
+
+            if (empty($locationNames)) {
+                Log::warning('No locations found for notification', [
                     'audit_plan_id' => $auditPlan->id,
-                    'audit_plan_name' => $auditPlan->name,
-                    'auditor_ids' => $auditorIds,
                     'location_ids' => $locationIds
-                ]);
-
-                // Get location names from IDs
-                $locationNames = $this->locationRepository->getNamesByIds($locationIds);
-
-                if (empty($locationNames)) {
-                    Log::warning('No locations found for notification', [
-                        'audit_plan_id' => $auditPlan->id,
-                        'location_ids' => $locationIds
-                    ]);
-                    return 0;
-                }
-
-                // Get ALL employees who have assets in the audited locations
-                $allEmployees = $this->employeeRepository->getEmployeesWithAssetsInLocations($locationNames);
-
-                // Also include assigned auditors (in case they don't have assets yet)
-                $assignedAuditors = $this->employeeRepository->where('id', 'in', $auditorIds);
-
-                // Merge and deduplicate employees
-                $employees = $allEmployees->merge($assignedAuditors)->unique('id');
-
-                if ($employees->isEmpty()) {
-                    Log::warning('No employees found for notification', [
-                        'audit_plan_id' => $auditPlan->id,
-                        'location_names' => $locationNames,
-                        'auditor_ids' => $auditorIds
-                    ]);
-                    return 0;
-                }
-
-                Log::info('Found employees for notification', [
-                    'audit_plan_id' => $auditPlan->id,
-                    'total_employees' => $employees->count(),
-                    'employees_with_assets' => $allEmployees->count(),
-                    'assigned_auditors' => $assignedAuditors->count(),
-                    'location_names' => $locationNames
-                ]);
-
-                $sentCount = 0;
-                $failedCount = 0;
-                $results = [];
-
-                foreach ($employees as $employee) {
-                    $result = $this->sendEmployeeNotification($auditPlan, $employee, $locationIds);
-
-                    if ($result) {
-                        $sentCount++;
-                        $results[] = [
-                            'employee_id' => $employee->id,
-                            'employee_email' => $employee->email,
-                            'status' => 'success',
-                            'has_assets' => $allEmployees->contains('id', $employee->id),
-                            'is_auditor' => $assignedAuditors->contains('id', $employee->id)
-                        ];
-                    } else {
-                        $failedCount++;
-                        $results[] = [
-                            'employee_id' => $employee->id,
-                            'employee_email' => $employee->email,
-                            'status' => 'failed',
-                            'has_assets' => $allEmployees->contains('id', $employee->id),
-                            'is_auditor' => $assignedAuditors->contains('id', $employee->id)
-                        ];
-                    }
-                }
-
-                Log::info('Initial audit notifications completed', [
-                    'audit_plan_id' => $auditPlan->id,
-                    'audit_plan_name' => $auditPlan->name,
-                    'total_employees' => $employees->count(),
-                    'notifications_sent' => $sentCount,
-                    'notifications_failed' => $failedCount,
-                    'location_names' => $locationNames,
-                    'results' => $results
-                ]);
-
-                return $sentCount;
-            } catch (\Exception $e) {
-                Log::error('Failed to send initial audit notifications', [
-                    'audit_plan_id' => $auditPlan->id,
-                    'audit_plan_name' => $auditPlan->name,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
                 ]);
                 return 0;
             }
-        });
+
+            // Get ALL employees who have assets in the audited locations
+            $allEmployees = Employee::whereHas('assignedAssets', function ($query) use ($locationNames) {
+                $query->whereIn('location', $locationNames);
+            })->get();
+
+            // Also include assigned auditors (in case they don't have assets yet)
+            $assignedAuditors = Employee::whereIn('id', $auditorIds)->get();
+
+            // Merge and deduplicate employees
+            $employees = $allEmployees->merge($assignedAuditors)->unique('id');
+
+            if ($employees->isEmpty()) {
+                Log::warning('No employees found for notification', [
+                    'audit_plan_id' => $auditPlan->id,
+                    'location_names' => $locationNames,
+                    'auditor_ids' => $auditorIds
+                ]);
+                return 0;
+            }
+
+            Log::info('Found employees for notification', [
+                'audit_plan_id' => $auditPlan->id,
+                'total_employees' => $employees->count(),
+                'employees_with_assets' => $allEmployees->count(),
+                'assigned_auditors' => $assignedAuditors->count(),
+                'location_names' => $locationNames
+            ]);
+
+            $sentCount = 0;
+            $failedCount = 0;
+            $results = [];
+
+            foreach ($employees as $employee) {
+                $result = $this->sendEmployeeNotification($auditPlan, $employee, $locationIds);
+
+                if ($result) {
+                    $sentCount++;
+                    $results[] = [
+                        'employee_id' => $employee->id,
+                        'employee_email' => $employee->email,
+                        'status' => 'success',
+                        'has_assets' => $allEmployees->contains('id', $employee->id),
+                        'is_auditor' => $assignedAuditors->contains('id', $employee->id)
+                    ];
+                } else {
+                    $failedCount++;
+                    $results[] = [
+                        'employee_id' => $employee->id,
+                        'employee_email' => $employee->email,
+                        'status' => 'failed',
+                        'has_assets' => $allEmployees->contains('id', $employee->id),
+                        'is_auditor' => $assignedAuditors->contains('id', $employee->id)
+                    ];
+                }
+            }
+
+            Log::info('Initial audit notifications completed', [
+                'audit_plan_id' => $auditPlan->id,
+                'audit_plan_name' => $auditPlan->name,
+                'total_employees' => $employees->count(),
+                'notifications_sent' => $sentCount,
+                'notifications_failed' => $failedCount,
+                'location_names' => $locationNames,
+                'results' => $results
+            ]);
+
+            return $sentCount;
+        } catch (\Exception $e) {
+            Log::error('Failed to send initial audit notifications', [
+                'audit_plan_id' => $auditPlan->id,
+                'audit_plan_name' => $auditPlan->name,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return 0;
+        }
     }
 
     /**
@@ -134,9 +130,15 @@ class AuditNotificationService
                 ->where('user_id', $employee->id)
                 ->get();
 
-            // For now, we'll just log the notification since we don't have the Mail classes in the package
-            // In a real implementation, you would send the actual email here
-            Log::info('Audit notification would be sent', [
+            // Send notification email
+            Mail::to($employee->email)->send(new AuditPlanNotificationEmail(
+                $auditPlan,
+                $employee,
+                $assignedAssets,
+                $auditPlan->due_date
+            ));
+
+            Log::info('Audit notification sent successfully', [
                 'employee_id' => $employee->id,
                 'employee_email' => $employee->email,
                 'audit_plan_id' => $auditPlan->id,
@@ -207,7 +209,9 @@ class AuditNotificationService
             }
 
             // Get ALL employees who have assets in the audited locations
-            $allEmployees = $this->employeeRepository->getEmployeesWithAssetsInLocations($locationNames);
+            $allEmployees = Employee::whereHas('assignedAssets', function ($query) use ($locationNames) {
+                $query->whereIn('location', $locationNames);
+            })->get();
 
             // Also include assigned auditors
             $assignedAuditors = $plan->assignments()
@@ -275,9 +279,14 @@ class AuditNotificationService
     private function sendReminderEmail(AuditPlan $plan, Employee $employee, $pendingAssets, int $daysRemaining): bool
     {
         try {
-            // For now, we'll just log the reminder since we don't have the Mail classes in the package
-            // In a real implementation, you would send the actual email here
-            Log::info('Audit reminder would be sent', [
+            Mail::to($employee->email)->send(new AuditReminderEmail(
+                $plan,
+                $employee,
+                $pendingAssets,
+                $daysRemaining
+            ));
+
+            Log::info('Audit reminder sent', [
                 'employee_id' => $employee->id,
                 'employee_email' => $employee->email,
                 'audit_plan_id' => $plan->id,

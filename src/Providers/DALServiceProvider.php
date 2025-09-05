@@ -16,6 +16,7 @@ use Bu\DAL\Database\Repositories\AuditAssignmentRepository;
 use Bu\DAL\Database\Repositories\CorrectiveActionRepository;
 use Bu\DAL\Database\Repositories\CorrectiveActionAssignmentRepository;
 use Bu\DAL\Services\AuditNotificationService;
+use Bu\DAL\Services\CorrectiveActionNotificationService;
 use Bu\DAL\Models\Asset;
 use Bu\DAL\Models\Employee;
 use Bu\DAL\Models\Location;
@@ -94,6 +95,10 @@ class DALServiceProvider extends ServiceProvider
                 $app->make(DatabaseManager::class)
             );
         });
+
+        $this->app->singleton(CorrectiveActionNotificationService::class, function ($app) {
+            return new CorrectiveActionNotificationService();
+        });
     }
 
     /**
@@ -119,10 +124,46 @@ class DALServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../../graphql/schema.graphql' => base_path('graphql/schema.graphql'),
             ], 'dal-graphql');
+
+            // Publish email templates
+            $this->publishes([
+                __DIR__ . '/../../resources/views/emails' => resource_path('views/emails'),
+            ], 'dal-email-templates');
+
+            // Publish additional views
+            $this->publishes([
+                __DIR__ . '/../../resources/views/graphql-playground.blade.php' => resource_path('views/graphql-playground.blade.php'),
+            ], 'dal-views');
+
+            // Publish HTTP controllers
+            $this->publishes([
+                __DIR__ . '/../../resources/Http/Controllers' => app_path('Http/Controllers'),
+            ], 'dal-controllers');
+
+            // Publish all resources at once
+            $this->publishes([
+                __DIR__ . '/../../config/dal.php' => config_path('dal.php'),
+                __DIR__ . '/../../database/migrations' => database_path('migrations'),
+                __DIR__ . '/../../graphql/schema.graphql' => base_path('graphql/schema.graphql'),
+                __DIR__ . '/../../resources/views/emails' => resource_path('views/emails'),
+                __DIR__ . '/../../resources/views/graphql-playground.blade.php' => resource_path('views/graphql-playground.blade.php'),
+                __DIR__ . '/../../resources/Http/Controllers' => app_path('Http/Controllers'),
+            ], 'dal-all');
         }
 
         // Load package migrations
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
+
+        // Register console commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \Bu\DAL\Console\Commands\InstallDALPackage::class,
+                \Bu\DAL\Console\Commands\SendAuditReminders::class,
+                \Bu\DAL\Console\Commands\SendCorrectiveActionReminders::class,
+                \Bu\DAL\Console\Commands\TestAuditPlanAccess::class,
+                \Bu\DAL\Console\Commands\TestAuditSystem::class,
+            ]);
+        }
 
         // Register GraphQL schema if enabled
         if (Config::get('dal.graphql.enabled', true)) {
