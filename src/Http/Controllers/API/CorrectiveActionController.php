@@ -82,38 +82,6 @@ class CorrectiveActionController extends Controller
     }
 
     /**
-     * Update the status of a corrective action.
-     */
-    public function updateActionStatus(Request $request, $id): JsonResponse
-    {
-        $validated = $request->validate([
-            'status' => 'required|string|in:open,in_progress,completed,verified',
-            'comment' => 'nullable|string'
-        ]);
-
-        $action = CorrectiveAction::findOrFail($id);
-        
-        // Create an update record
-        $update = $action->updates()->create([
-            'status' => $validated['status'],
-            'comment' => $validated['comment'] ?? null,
-            'user_id' => $request->user_id ?? null
-        ]);
-
-        // Update the main corrective action status
-        $action->status = $validated['status'];
-        $action->save();
-
-        // Load relationships for the response
-        $action->load(['updates', 'auditAsset.asset', 'auditPlan', 'assignedTo']);
-
-        return response()->json([
-            'data' => $action,
-            'message' => 'Status updated successfully'
-        ]);
-    }
-
-    /**
      * Add an update to a corrective action.
      */
     public function addUpdate(Request $request, CorrectiveAction $action): JsonResponse
@@ -193,67 +161,39 @@ class CorrectiveActionController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateActionStatus(Request $request): JsonResponse
     {
         try {
-            // Different validation rules based on whether a token is provided
-            if ($request->has('token')) {
-                $request->validate([
-                    'status' => 'required|in:open,in_progress,completed,verified',
-                    'comment' => 'required|string',
-                    'token' => 'required|string'
-                ]);
+            $request->validate([
+                'action_id' => 'required|integer',
+                'status' => 'required|string|in:pending,in_progress,completed',
+                'notes' => 'nullable|string',
+                'employee_id' => 'required|integer'
+            ]);
 
-                // Validate token
-                $tokenData = Cache::get("audit_access:{$request->token}");
-                if (!$tokenData) {
-                    return response()->json([
-                        'message' => 'Access token is invalid or has expired.'
-                    ], 401);
-                }
+            $actionId = $request->input('action_id');
+            $status = $request->input('status');
+            $notes = $request->input('notes');
+            $employeeId = $request->input('employee_id');
 
-                if (Carbon::parse($tokenData['expires_at'])->isPast()) {
-                    Cache::forget("audit_access:{$request->token}");
-                    return response()->json([
-                        'message' => 'Access token has expired.'
-                    ], 401);
-                }
+            $action = CorrectiveAction::findOrFail($actionId);
 
-                $userId = $tokenData['employee_id'];
-            } else {
-                $request->validate([
-                    'status' => 'required|in:open,in_progress,completed,verified',
-                    'comment' => 'required|string',
-                    'employee_id' => 'required|exists:employees,id'
-                ]);
-
-                $userId = $request->employee_id;
-            }
-
-            $action = CorrectiveAction::with('auditAsset')->findOrFail($id);
-
-            // If using token, verify the action belongs to the audit plan
-            if ($request->has('token') && $action->audit_plan_id != $tokenData['audit_plan_id']) {
+            // Verify the employee is assigned to this action
+            if ($action->assigned_to != $employeeId) {
                 return response()->json([
-                    'message' => 'You are not authorized to update this action.'
+                    'success' => false,
+                    'message' => 'You are not assigned to this corrective action'
                 ], 403);
             }
 
-            // Verify the action is assigned to the employee
-            if ($action->assigned_to != $userId) {
-                return response()->json([
-                    'message' => 'You are not authorized to update this action.'
-                ], 403);
-            }
-
-            // Update the action status and notes
-            $action->status = $request->status;
-            if ($request->has('comment')) {
+            // Update the action status
+            $action->status = $status;
+            if ($notes) {
                 $action->notes = $action->notes
-                    ? $action->notes . "\n[" . now()->format('Y-m-d H:i:s') . "] " . $request->comment
-                    : "[" . now()->format('Y-m-d H:i:s') . "] " . $request->comment;
+                    ? $action->notes . "\n[" . now()->format('Y-m-d H:i:s') . "] " . $notes
+                    : "[" . now()->format('Y-m-d H:i:s') . "] " . $notes;
             }
-            if ($request->status === 'completed' || $request->status === 'verified') {
+            if ($status === 'completed') {
                 $action->completed_date = now();
             }
             $action->save();
