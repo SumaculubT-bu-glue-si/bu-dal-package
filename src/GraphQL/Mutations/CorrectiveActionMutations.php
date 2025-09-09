@@ -19,29 +19,29 @@ class CorrectiveActionMutations
     public function create($rootValue, array $args)
     {
         $input = $args['action'];
-        
+
         // Validate that the audit asset exists and belongs to the audit plan
         $auditAsset = AuditAsset::find($input['audit_asset_id']);
         if (!$auditAsset) {
             throw new \Exception('Audit asset not found');
         }
-        
+
         $auditPlan = AuditPlan::find($auditAsset->audit_plan_id);
         if (!$auditPlan) {
             throw new \Exception('Audit plan not found');
         }
-        
+
         // Find the audit assignment for this location
         $auditAssignment = AuditAssignment::where('audit_plan_id', $auditAsset->audit_plan_id)
             ->whereHas('location', function ($query) use ($auditAsset) {
                 $query->where('name', $auditAsset->original_location);
             })
             ->first();
-        
+
         if (!$auditAssignment) {
             throw new \Exception('No audit assignment found for location: ' . $auditAsset->original_location);
         }
-        
+
         // Create the corrective action
         $correctiveAction = CorrectiveAction::create([
             'audit_asset_id' => $input['audit_asset_id'],
@@ -54,7 +54,7 @@ class CorrectiveActionMutations
             'due_date' => $input['due_date'],
             'notes' => $input['notes'] ?? null,
         ]);
-        
+
         // Create the corrective action assignment
         $assignment = CorrectiveActionAssignment::create([
             'corrective_action_id' => $correctiveAction->id,
@@ -62,12 +62,12 @@ class CorrectiveActionMutations
             'assigned_to_employee_id' => $auditAssignment->auditor_id, // Default to the auditor
             'status' => 'pending',
         ]);
-        
+
         // Send notifications to assigned employees
         try {
             $notificationService = new CorrectiveActionNotificationService();
             $notificationResult = $notificationService->sendCorrectiveActionNotification($correctiveAction);
-            
+
             Log::info('Corrective action notification sent after creation', [
                 'corrective_action_id' => $correctiveAction->id,
                 'notification_result' => $notificationResult
@@ -79,10 +79,10 @@ class CorrectiveActionMutations
             ]);
             // Don't fail the creation if notification fails
         }
-        
+
         return $correctiveAction->load(['auditAsset.asset', 'auditPlan', 'assignment.auditAssignment.auditor']);
     }
-    
+
     /**
      * Update an existing corrective action.
      */
@@ -92,9 +92,9 @@ class CorrectiveActionMutations
         if (!$correctiveAction) {
             throw new \Exception('Corrective action not found');
         }
-        
+
         $input = $args['action'];
-        
+
         // Update the corrective action
         $correctiveAction->update([
             'issue' => $input['issue'],
@@ -104,13 +104,13 @@ class CorrectiveActionMutations
             'due_date' => $input['due_date'],
             'notes' => $input['notes'] ?? null,
         ]);
-        
+
         // Send notifications if assignment changed
         if (isset($input['assigned_to']) && $input['assigned_to'] !== $correctiveAction->getOriginal('assigned_to')) {
             try {
                 $notificationService = new CorrectiveActionNotificationService();
                 $notificationResult = $notificationService->sendCorrectiveActionNotification($correctiveAction);
-                
+
                 Log::info('Corrective action notification sent after assignment update', [
                     'corrective_action_id' => $correctiveAction->id,
                     'notification_result' => $notificationResult
@@ -123,10 +123,10 @@ class CorrectiveActionMutations
                 // Don't fail the update if notification fails
             }
         }
-        
+
         return $correctiveAction->load(['auditAsset.asset', 'auditPlan']);
     }
-    
+
     /**
      * Update the status of a corrective action.
      */
@@ -136,17 +136,26 @@ class CorrectiveActionMutations
         if (!$correctiveAction) {
             throw new \Exception('Corrective action not found');
         }
-        
+
         $status = $args['status'];
         $notes = $args['notes'] ?? null;
 
         // If status is completed, use markAsCompleted to handle cascading updates
         if ($status === 'completed') {
             $resolutionStatus = $correctiveAction->getResolutionStatus();
+            \Illuminate\Support\Facades\Log::info('Corrective action completion', [
+                'id' => $correctiveAction->id,
+                'resolution_status' => $resolutionStatus,
+                'audit_asset' => $correctiveAction->auditAsset ? $correctiveAction->auditAsset->id : null
+            ]);
+
             $success = $correctiveAction->markAsCompleted($notes, $resolutionStatus);
             if (!$success) {
                 throw new \Exception('Failed to mark corrective action as completed');
             }
+
+            // Reload the corrective action to get fresh data
+            $correctiveAction->refresh();
 
             // Also mark the assignment as completed
             if ($assignment = $correctiveAction->assignment) {
@@ -155,18 +164,27 @@ class CorrectiveActionMutations
                     $assignment->updateProgressNotes($notes);
                 }
             }
+
+            // Force update audit asset status
+            if ($auditAsset = $correctiveAction->auditAsset) {
+                $auditAsset->update([
+                    'current_status' => $resolutionStatus,
+                    'resolved' => true
+                ]);
+                $auditAsset->updateMainAssetDirectly();
+            }
         } else {
             // For other statuses, just update the corrective action
             $updateData = [
                 'status' => $status,
                 'notes' => $notes ? $correctiveAction->notes . "\n\nStatus Update: " . $notes : $correctiveAction->notes,
             ];
-            
+
             // If status is overdue, check if due date has passed
             if ($status !== 'completed' && $correctiveAction->due_date < Carbon::now()) {
                 $updateData['status'] = 'overdue';
             }
-            
+
             $correctiveAction->update($updateData);
 
             // Update assignment status to match
@@ -177,12 +195,12 @@ class CorrectiveActionMutations
                 }
             }
         }
-        
+
         // Send notifications for status change
         try {
             $notificationService = new CorrectiveActionNotificationService();
             $notificationResult = $notificationService->sendCorrectiveActionNotification($correctiveAction);
-            
+
             Log::info('Corrective action notification sent after status update', [
                 'corrective_action_id' => $correctiveAction->id,
                 'new_status' => $status,
@@ -195,12 +213,12 @@ class CorrectiveActionMutations
             ]);
             // Don't fail the status update if notification fails
         }
-        
+
         // Refresh relationships to get updated data
         $correctiveAction->refresh();
         return $correctiveAction->load(['auditAsset.asset', 'auditPlan', 'assignment']);
     }
-    
+
     /**
      * Delete a corrective action.
      */
@@ -210,9 +228,9 @@ class CorrectiveActionMutations
         if (!$correctiveAction) {
             throw new \Exception('Corrective action not found');
         }
-        
+
         $correctiveAction->delete();
-        
+
         return true;
     }
 }

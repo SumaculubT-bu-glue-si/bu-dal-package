@@ -125,27 +125,47 @@ class CorrectiveAction extends Model
      */
     public function markAsCompleted(string $notes = null, string $resolutionStatus = null): bool
     {
+        \Illuminate\Support\Facades\Log::info('Starting markAsCompleted', [
+            'id' => $this->id,
+            'resolution_status' => $resolutionStatus
+        ]);
+
         $this->update([
             'status' => 'completed',
             'completed_date' => now(),
             'notes' => $notes ? ($this->notes ? $this->notes . "\n\n" : '') . date('Y-m-d H:i:s') . " - " . $notes : $this->notes,
         ]);
 
+        // Refresh the model to get the latest data
+        $this->refresh();
+
         // Update the audit asset status based on resolution
         $auditAsset = $this->auditAsset;
         if ($auditAsset && $resolutionStatus) {
+            \Illuminate\Support\Facades\Log::info('Updating audit asset', [
+                'audit_asset_id' => $auditAsset->id,
+                'new_status' => $resolutionStatus
+            ]);
+
             $auditAsset->update([
                 'current_status' => $resolutionStatus,
+                'resolved' => true,
                 'auditor_notes' => ($auditAsset->auditor_notes ? $auditAsset->auditor_notes . "\n\n" : '') .
                     date('Y-m-d H:i:s') . " - Corrective action completed. Status updated to: " . $resolutionStatus .
                     ($notes ? "\nResolution notes: " . $notes : ''),
             ]);
-        }
 
-        // Check if all corrective actions for this audit asset are completed
-        if ($auditAsset && $auditAsset->allCorrectiveActionsCompleted()) {
-            // Update the main asset table
-            return $auditAsset->updateMainAsset();
+            // Force refresh audit asset
+            $auditAsset->refresh();
+
+            // Directly update the main asset
+            $updateResult = $auditAsset->updateMainAssetDirectly();
+            \Illuminate\Support\Facades\Log::info('Main asset update result', [
+                'success' => $updateResult,
+                'audit_asset_id' => $auditAsset->id
+            ]);
+
+            return $updateResult;
         }
 
         return true;
