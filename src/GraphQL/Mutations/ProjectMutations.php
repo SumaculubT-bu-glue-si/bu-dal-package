@@ -1,35 +1,28 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Mutations;
+namespace Bu\Server\GraphQL\Mutations;
 
-use Bu\DAL\Models\Project;
-use Bu\DAL\Database\Repositories\ProjectRepository;
-use Bu\DAL\Database\DatabaseManager;
+use Bu\Server\Models\Project;
 use GraphQL\Type\Definition\ResolveInfo;
 use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
 
 class ProjectMutations
 {
-    public function __construct(
-        private ProjectRepository $projectRepository,
-        private DatabaseManager $databaseManager
-    ) {}
-
     /**
      * Create a new project
      */
     public function create($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $input = $args['project'];
+        $input = $args['project'];
+        
+        $project = Project::create([
+            'name' => $input['name'],
+            'description' => $input['description'] ?? null,
+            'visible' => $input['visible'] ?? true,
+            'order' => $input['order'] ?? 0,
+        ]);
 
-            return $this->projectRepository->create([
-                'name' => $input['name'],
-                'description' => $input['description'] ?? null,
-                'visible' => $input['visible'] ?? true,
-                'order' => $input['order'] ?? 0,
-            ]);
-        });
+        return $project;
     }
 
     /**
@@ -37,21 +30,19 @@ class ProjectMutations
      */
     public function update($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $input = $args['project'];
-            $id = $args['id'];
+        $input = $args['project'];
+        $id = $args['id'];
+        
+        $project = Project::findOrFail($id);
+        
+        $project->update([
+            'name' => $input['name'] ?? $project->name,
+            'description' => $input['description'] ?? $project->description,
+            'visible' => $input['visible'] ?? $project->visible,
+            'order' => $input['order'] ?? $project->order,
+        ]);
 
-            $project = $this->projectRepository->findOrFail($id);
-
-            $project->update([
-                'name' => $input['name'] ?? $project->name,
-                'description' => $input['description'] ?? $project->description,
-                'visible' => $input['visible'] ?? $project->visible,
-                'order' => $input['order'] ?? $project->order,
-            ]);
-
-            return $project;
-        });
+        return $project;
     }
 
     /**
@@ -59,11 +50,12 @@ class ProjectMutations
      */
     public function delete($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $id = $args['id'];
-            $this->projectRepository->delete($id);
-            return true;
-        });
+        $id = $args['id'];
+        
+        $project = Project::findOrFail($id);
+        $project->delete();
+        
+        return true;
     }
 
     /**
@@ -71,10 +63,18 @@ class ProjectMutations
      */
     public function upsertProject($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $input = $args['project'];
-            return $this->projectRepository->upsertByName($input);
-        });
+        $input = $args['project'];
+        
+        $project = Project::updateOrCreate(
+            ['name' => $input['name']],
+            [
+                'description' => $input['description'] ?? null,
+                'visible' => $input['visible'] ?? true,
+                'order' => $input['order'] ?? 0,
+            ]
+        );
+
+        return $project;
     }
 
     /**
@@ -82,10 +82,22 @@ class ProjectMutations
      */
     public function bulkUpsertProjects($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $projects = $args['projects'];
-            $results = $this->projectRepository->bulkUpsert($projects);
-            return $results->all();
-        });
+        $projects = $args['projects'];
+        $result = [];
+        
+        foreach ($projects as $projectData) {
+            $project = Project::updateOrCreate(
+                ['name' => $projectData['name']],
+                [
+                    'description' => $projectData['description'] ?? null,
+                    'visible' => $projectData['visible'] ?? true,
+                    'order' => $projectData['order'] ?? 0,
+                ]
+            );
+            
+            $result[] = $project;
+        }
+        
+        return $result;
     }
 }

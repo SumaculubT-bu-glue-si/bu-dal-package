@@ -1,17 +1,12 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Queries;
+namespace Bu\Server\GraphQL\Queries;
 
-use Bu\DAL\Models\Asset;
-use Bu\DAL\Database\Repositories\AssetRepository;
+use Bu\Server\Models\Asset;
 use Illuminate\Database\Eloquent\Builder;
 
 class AssetQueries
 {
-    public function __construct(
-        private AssetRepository $assetRepository
-    ) {}
-
     /**
      * Resolve the employee field for an asset.
      */
@@ -23,6 +18,10 @@ class AssetQueries
     /**
      * Builder for assets pagination with rich filters.
      * This is referenced by schema.graphql via @paginate(builder: ...).
+     *
+     * @param  mixed   $root
+     * @param  array   $args
+     * @return Builder
      */
     public function assetsBuilder($root, array $args): Builder
     {
@@ -63,35 +62,15 @@ class AssetQueries
 
         // Column LIKE helpers
         $likeColumns = [
-            'asset_id',
-            'hostname',
-            'manufacturer',
-            'model',
-            'part_number',
-            'serial_number',
-            'form_factor',
-            'os',
-            'os_bit',
-            'office_suite',
-            'software_license_key',
-            'wired_mac_address',
-            'wired_ip_address',
-            'wireless_mac_address',
-            'wireless_ip_address',
-            'previous_user',
-            'project',
-            'notes',
-            'notes1',
-            'notes2',
-            'notes3',
-            'notes4',
-            'notes5',
-            'cpu',
-            'memory',
+            'asset_id','hostname','manufacturer','model','part_number','serial_number',
+            'form_factor','os','os_bit','office_suite','software_license_key',
+            'wired_mac_address','wired_ip_address','wireless_mac_address','wireless_ip_address',
+            'previous_user','project','notes','notes1','notes2','notes3','notes4','notes5',
+            'cpu','memory',
         ];
         foreach ($likeColumns as $col) {
             if (!empty($args[$col])) {
-                $query->where($col, 'like', '%' . $args[$col] . '%');
+                $query->where($col, 'like', '%'.$args[$col].'%');
             }
         }
 
@@ -100,33 +79,21 @@ class AssetQueries
             $global = $args['global'];
             $query->where(function (Builder $q) use ($global) {
                 $q->orWhere('asset_id', 'like', "%{$global}%")
-                    ->orWhere('hostname', 'like', "%{$global}%")
-                    ->orWhere('manufacturer', 'like', "%{$global}%")
-                    ->orWhere('model', 'like', "%{$global}%")
-                    ->orWhere('serial_number', 'like', "%{$global}%")
-                    ->orWhere('location', 'like', "%{$global}%")
-                    ->orWhere('status', 'like', "%{$global}%")
-                    ->orWhere('previous_user', 'like', "%{$global}%")
-                    ->orWhere('project', 'like', "%{$global}%")
-                    ->orWhere('notes', 'like', "%{$global}%");
+                  ->orWhere('hostname', 'like', "%{$global}%")
+                  ->orWhere('manufacturer', 'like', "%{$global}%")
+                  ->orWhere('model', 'like', "%{$global}%")
+                  ->orWhere('serial_number', 'like', "%{$global}%")
+                  ->orWhere('location', 'like', "%{$global}%")
+                  ->orWhere('status', 'like', "%{$global}%")
+                  ->orWhere('previous_user', 'like', "%{$global}%")
+                  ->orWhere('project', 'like', "%{$global}%")
+                  ->orWhere('notes', 'like', "%{$global}%");
             });
         }
 
         // Sorting
         $allowedSortFields = [
-            'asset_id',
-            'type',
-            'hostname',
-            'manufacturer',
-            'model',
-            'serial_number',
-            'location',
-            'status',
-            'user_id',
-            'project',
-            'last_updated',
-            'created_at',
-            'updated_at'
+            'asset_id','type','hostname','manufacturer','model','serial_number','location','status','user_id','project','last_updated','created_at','updated_at'
         ];
         $sortField = in_array($args['sort_field'] ?? '', $allowedSortFields, true) ? $args['sort_field'] : 'asset_id';
         $sortDirection = strtolower($args['sort_direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';

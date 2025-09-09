@@ -1,16 +1,11 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Queries;
+namespace Bu\Server\GraphQL\Queries;
 
-use Bu\DAL\Models\Location;
-use Bu\DAL\Database\Repositories\LocationRepository;
+use Bu\Server\Models\Location;
 
 class LocationQueries
 {
-    public function __construct(
-        private LocationRepository $locationRepository
-    ) {}
-
     /**
      * Get all locations with optional filtering.
      */
@@ -43,7 +38,7 @@ class LocationQueries
     public function location($rootValue, array $args)
     {
         $id = $args['id'];
-
+        
         return Location::find($id);
     }
 }

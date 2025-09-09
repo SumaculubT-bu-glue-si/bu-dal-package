@@ -1,10 +1,12 @@
 <?php
 
-namespace Bu\DAL\Models;
+namespace Bu\Server\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Bu\Server\Traits\Auditable;
 
 class User extends Authenticatable
 {

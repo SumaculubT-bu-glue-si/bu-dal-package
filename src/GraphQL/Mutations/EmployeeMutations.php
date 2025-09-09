@@ -1,44 +1,37 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Mutations;
+namespace Bu\Server\GraphQL\Mutations;
 
-use Bu\DAL\Models\Employee;
-use Bu\DAL\Database\Repositories\EmployeeRepository;
-use Bu\DAL\Database\DatabaseManager;
+use Bu\Server\Models\Employee;
 use GraphQL\Type\Definition\ResolveInfo;
 use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
 
 class EmployeeMutations
 {
-    public function __construct(
-        private EmployeeRepository $employeeRepository,
-        private DatabaseManager $databaseManager
-    ) {}
-
     /**
      * Create a new employee
      */
     public function create($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $input = $args['employee'];
+        $input = $args['employee'];
 
-            // Enforce unique email if provided
-            if (!empty($input['email'])) {
-                $exists = Employee::where('email', $input['email'])->exists();
-                if ($exists) {
-                    throw new \GraphQL\Error\Error('An employee with this email already exists.');
-                }
+        // Enforce unique email if provided
+        if (!empty($input['email'])) {
+            $exists = Employee::where('email', $input['email'])->exists();
+            if ($exists) {
+                throw new \GraphQL\Error\Error('An employee with this email already exists.');
             }
+        }
 
-            return $this->employeeRepository->create([
-                'employee_id' => $input['employee_id'],
-                'name' => $input['name'],
-                'email' => $input['email'] ?? null,
-                'location' => $input['location'] ?? null,
-                'projects' => $input['projects'] ?? [],
-            ]);
-        });
+        $employee = Employee::create([
+            'employee_id' => $input['employee_id'],
+            'name' => $input['name'],
+            'email' => $input['email'] ?? null,
+            'location' => $input['location'] ?? null,
+            'projects' => $input['projects'] ?? [],
+        ]);
+
+        return $employee;
     }
 
     /**
@@ -46,32 +39,30 @@ class EmployeeMutations
      */
     public function update($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $input = $args['employee'];
-            $id = $args['id'];
+        $input = $args['employee'];
+        $id = $args['id'];
 
-            $employee = $this->employeeRepository->findOrFail($id);
+        $employee = Employee::findOrFail($id);
 
-            // Enforce unique email if provided (excluding current record)
-            if (!empty($input['email'])) {
-                $exists = Employee::where('email', $input['email'])
-                    ->where('id', '!=', $id)
-                    ->exists();
-                if ($exists) {
-                    throw new \GraphQL\Error\Error('An employee with this email already exists.');
-                }
+        // Enforce unique email if provided (excluding current record)
+        if (!empty($input['email'])) {
+            $exists = Employee::where('email', $input['email'])
+                ->where('id', '!=', $id)
+                ->exists();
+            if ($exists) {
+                throw new \GraphQL\Error\Error('An employee with this email already exists.');
             }
+        }
 
-            $employee->update([
-                'employee_id' => $input['employee_id'],
-                'name' => $input['name'],
-                'email' => $input['email'] ?? null,
-                'location' => $input['location'] ?? null,
-                'projects' => $input['projects'] ?? [],
-            ]);
+        $employee->update([
+            'employee_id' => $input['employee_id'],
+            'name' => $input['name'],
+            'email' => $input['email'] ?? null,
+            'location' => $input['location'] ?? null,
+            'projects' => $input['projects'] ?? [],
+        ]);
 
-            return $employee;
-        });
+        return $employee;
     }
 
     /**
@@ -79,11 +70,12 @@ class EmployeeMutations
      */
     public function delete($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $id = $args['id'];
-            $this->employeeRepository->delete($id);
-            return true;
-        });
+        $id = $args['id'];
+
+        $employee = Employee::findOrFail($id);
+        $employee->delete();
+
+        return true;
     }
 
     /**
@@ -91,10 +83,19 @@ class EmployeeMutations
      */
     public function upsertEmployee($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $input = $args['employee'];
-            return $this->employeeRepository->upsertByEmployeeId($input);
-        });
+        $input = $args['employee'];
+
+        $employee = Employee::updateOrCreate(
+            ['employee_id' => $input['employee_id']],
+            [
+                'name' => $input['name'],
+                'email' => $input['email'] ?? null,
+                'location' => $input['location'] ?? null,
+                'projects' => $input['projects'] ?? [],
+            ]
+        );
+
+        return $employee;
     }
 
     /**
@@ -102,10 +103,23 @@ class EmployeeMutations
      */
     public function bulkUpsertEmployees($rootValue, array $args, GraphQLContext $context, ResolveInfo $resolveInfo)
     {
-        return $this->databaseManager->transaction(function () use ($args) {
-            $employees = $args['employees'];
-            $results = $this->employeeRepository->bulkUpsert($employees);
-            return $results->all();
-        });
+        $employees = $args['employees'];
+        $result = [];
+
+        foreach ($employees as $employeeData) {
+            $employee = Employee::updateOrCreate(
+                ['employee_id' => $employeeData['employee_id']],
+                [
+                    'name' => $employeeData['name'],
+                    'email' => $employeeData['email'] ?? null,
+                    'location' => $employeeData['location'] ?? null,
+                    'projects' => $employeeData['projects'] ?? [],
+                ]
+            );
+
+            $result[] = $employee;
+        }
+
+        return $result;
     }
 }

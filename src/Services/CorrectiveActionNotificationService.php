@@ -1,14 +1,14 @@
 <?php
 
-namespace Bu\DAL\Services;
+namespace Bu\Server\Services;
 
-use Bu\DAL\Models\CorrectiveAction;
-use Bu\DAL\Models\CorrectiveActionAssignment;
-use Bu\DAL\Models\AuditAsset;
-use Bu\DAL\Models\Asset;
-use Bu\DAL\Models\Employee;
-use App\Mail\CorrectiveActionNotificationEmail;
-use App\Mail\ConsolidatedCorrectiveActionEmail;
+use Bu\Server\Models\CorrectiveAction;
+use Bu\Server\Models\CorrectiveActionAssignment;
+use Bu\Server\Models\AuditAsset;
+use Bu\Server\Models\Asset;
+use Bu\Server\Models\Employee;
+use Bu\Server\Mail\CorrectiveActionNotificationEmail;
+use Bu\Server\Mail\ConsolidatedCorrectiveActionEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
@@ -195,11 +195,10 @@ class CorrectiveActionNotificationService
     private function sendEmployeeNotification(CorrectiveAction $correctiveAction, Employee $employee, AuditAsset $auditAsset, Asset $asset, $auditPlan): bool
     {
         try {
-            Mail::to($employee->email)->send(new CorrectiveActionNotificationEmail(
-                $correctiveAction,
+            // Use ConsolidatedCorrectiveActionEmail for consistency
+            Mail::to($employee->email)->send(new ConsolidatedCorrectiveActionEmail(
+                collect([$correctiveAction]),
                 $employee,
-                $auditAsset,
-                $asset,
                 $auditPlan
             ));
 

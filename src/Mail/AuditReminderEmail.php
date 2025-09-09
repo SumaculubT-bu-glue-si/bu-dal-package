@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mail;
+namespace Bu\Server\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -47,7 +47,7 @@ class AuditReminderEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.audit-reminder',
+            view: 'server::emails.audit-reminder',
             with: [
                 'auditPlan' => $this->auditPlan,
                 'employee' => $this->employee,

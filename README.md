@@ -1,62 +1,30 @@
-# BU DAL Package
+# Business Unit Server Package
 
-A comprehensive Laravel package that provides a complete Data Access Layer (DAL) with GraphQL and REST API support for business applications. This package extracts database operations, repository patterns, and API functionality into a reusable component.
+A Laravel package that provides server functionality for the Business Unit client application, including asset management, audit planning, and corrective action tracking.
 
-## 🚀 Features
+## Requirements
 
-- **📊 Database Management**: Advanced database connection management with MySQL support
-- **🏗️ Repository Pattern**: Clean separation of data access logic with BaseRepository
-- **🔍 GraphQL Integration**: Complete GraphQL API with queries, mutations, and schema
-- **🌐 REST API**: Comprehensive REST API endpoints (1,500+ lines) for all models
-- **🔄 Transaction Management**: Automatic transaction handling with rollback support
-- **📋 Audit System**: Complete audit tracking and notification system
-- **📦 Asset Management**: Full asset lifecycle management with status tracking
-- **👥 Employee Management**: Employee and user management system
-- **🏢 Location & Project Management**: Multi-location and project support
-- **📧 Email Notifications**: Automated email system for audits and corrective actions
-- **⚡ Console Commands**: Artisan commands for system maintenance and testing
-- **🛡️ CORS Middleware**: Built-in CORS support for GraphQL endpoints
-
-## 📋 Requirements
-
-- PHP 8.2 or higher
-- Laravel 11.x or 12.x
-- MySQL 5.7 or higher (XAMPP compatible)
+- PHP ^8.1
+- Laravel ^10.0
+- MySQL/PostgreSQL database
 - Composer
-- Nuwave Lighthouse (for GraphQL)
 
-## 🛠️ Installation
+## Creating a New Project with this Package
 
-### 🚀 Quick Installation (Recommended)
-
-For a complete setup with all necessary files, use the automated installer:
+### Step 1: Create a new Laravel project
 
 ```bash
-# 1. Install the package
-composer require bu/dal-package:dev-main
-
-# 2. Run the automated installer
-php artisan dal:install
+composer create-project laravel/laravel your-project-name
+cd your-project-name
 ```
 
-The installer will automatically:
+### Step 2: Add the package repository
 
-- ✅ Publish all package files (config, migrations, GraphQL schema, email templates, views, controllers)
-- ✅ Install and configure Lighthouse
-- ✅ Update Lighthouse configuration with correct namespaces
-- ✅ Add DAL configuration to .env.example
-- ✅ Provide next steps instructions
-
-### 📋 Manual Installation
-
-If you prefer manual installation:
-
-#### Step 1: Install via Composer
-
-Add the repository to your `composer.json`:
+Add this to your `composer.json`:
 
 ```json
 {
+  "minimum-stability": "dev",
   "repositories": [
     {
       "type": "vcs",
@@ -64,536 +32,260 @@ Add the repository to your `composer.json`:
     }
   ],
   "require": {
-    "bu/dal-package": "dev-main"
+    "bu/server": "dev-main"
   }
 }
 ```
 
-Then run:
+### Step 3: Install required packages
 
 ```bash
-composer require bu/dal-package:dev-main
-```
-
-#### Step 2: Install Lighthouse (GraphQL)
-
-```bash
+composer require bu/server:dev-master
+composer require doctrine/dbal
 composer require nuwave/lighthouse
+composer require laravel/sanctum
 ```
 
-#### Step 3: Publish All Package Files
+### Step 4: Copy Required Files
+
+1. Create required directories:
 
 ```bash
-# Publish everything at once
-php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-all"
-
-# Or publish individually:
-php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-config"
-php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-migrations"
-php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-graphql"
-php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-email-templates"
-php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-views"
-php artisan vendor:publish --provider="Bu\DAL\Providers\DALServiceProvider" --tag="dal-controllers"
+mkdir graphql
 ```
 
-#### Step 4: Configure Environment (.env)
+2. Copy these files from server-package to your project:
+
+```bash
+# GraphQL Schema
+cp vendor/bu/server/graphql/schema.graphql ./graphql/
+
+# Configuration files
+cp vendor/bu/server/config/lighthouse.php ./config/
+
+# Configure kernel
+cp vendor/bu/server/src/Http/Kernel.php ./app/Http/
+
+# Add routes/api
+cp vendor/bu/server/routes/api.php ./routes/
+
+# Configure route dependency
+cp vendor/bu/server/config/app.php ./bootstrap/
+```
+
+### Step 3: Configure Environment
+
+Set up your `.env` file with the required configurations:
 
 ```env
-# Database Configuration
+# Database
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=your_database_name
+DB_DATABASE=studio_db
 DB_USERNAME=root
-DB_PASSWORD=your_password
+DB_PASSWORD=
 
-# GraphQL Configuration
-LIGHTHOUSE_SCHEMA_PATH=graphql/schema.graphql
-
-# Mail Configuration
+# Mail
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
+MAIL_USERNAME=sumaculub_t@bu.glue-si.com
+MAIL_PASSWORD=trbwodxdampcrecs
 MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=your-email@gmail.com
-MAIL_FROM_NAME="${APP_NAME}"
-
-# DAL Package Configuration
-DAL_DEFAULT_CONNECTION=mysql
-DAL_CACHE_ENABLED=true
-DAL_CACHE_TTL=3600
-DAL_GRAPHQL_ENABLED=true
-DAL_LOGGING_ENABLED=true
-DAL_LOG_LEVEL=info
+MAIL_FROM_ADDRESS=noreply@gmail.com
+MAIL_FROM_NAME="Asset Management System"
 ```
 
-#### Step 5: Run Migrations
+## Configuration
+
+### Middleware Setup
+
+1. Create these middleware classes in `app/Http/Middleware/`:
+
+```bash
+php artisan make:middleware Authenticate
+php artisan make:middleware RedirectIfAuthenticated
+php artisan make:middleware TrimStrings
+php artisan make:middleware TrustProxies
+php artisan make:middleware VerifyCsrfToken
+```
+
+2. Note: The following middleware classes are provided by Laravel framework, so you don't need to create them:
+
+- `\Illuminate\Auth\Middleware\AuthenticateWithBasicAuth`
+- `\Illuminate\Auth\Middleware\AuthenticateSession`
+- `\Illuminate\Http\Middleware\SetCacheHeaders`
+- `\Illuminate\Auth\Middleware\Authorize`
+- `\Illuminate\Auth\Middleware\RequirePassword`
+- `\Illuminate\Routing\Middleware\ValidateSignature`
+- `\Illuminate\Routing\Middleware\ThrottleRequests`
+- `\Illuminate\Auth\Middleware\EnsureEmailIsVerified`
+
+### CORS Configuration
+
+To work with the client application, add the following to your `config/cors.php`:
+
+```php
+<?php
+
+return [
+    'paths' => ['api/*'],
+    'allowed_methods' => ['*'],
+    'allowed_origins' => ['*'],
+    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],
+    'exposed_headers' => [],
+    'max_age' => 0,
+    'supports_credentials' => false,
+];
+
+```
+
+## Route Provider Configuration
+
+1. Create or update `app/Providers/RouteServiceProvider.php`:
+
+```php
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
+
+class RouteServiceProvider extends ServiceProvider
+{
+    /**
+     * The path to your application's "home" route.
+     *
+     * Typically, users are redirected here after authentication.
+     *
+     * @var string
+     */
+    public const HOME = '/home';
+
+    /**
+     * Define your route model bindings, pattern filters, and other route configuration.
+     */
+    public function boot(): void
+    {
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip());
+        });
+
+        $this->routes(function () {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/api.php'));
+
+            Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+        });
+    }
+}
+```
+
+This provider configures:
+
+- Rate limiting for API routes (60 requests per minute per IP)
+- API routes with the 'api' middleware and 'api' prefix
+- Web routes with the 'web' middleware
+
+## Final Setup Steps
+
+1. Run migrations:
 
 ```bash
 php artisan migrate
 ```
 
-#### Step 6: Configure Lighthouse (GraphQL)
+2. Clear all caches:
 
 ```bash
-php artisan vendor:publish --provider="Nuwave\Lighthouse\LighthouseServiceProvider" --tag="lighthouse-config"
+php artisan optimize:clear
+php artisan config:clear
+php artisan route:clear
+php artisan cache:clear
 ```
 
-Update `config/lighthouse.php` to include the package namespaces:
+3. Start the server:
 
-```php
-'namespaces' => [
-    'models' => ['App', 'App\\Models', 'Bu\\DAL\\Models'],
-    'queries' => ['App\\GraphQL\\Queries', 'Bu\\DAL\\GraphQL\\Queries'],
-    'mutations' => ['App\\GraphQL\\Mutations', 'Bu\\DAL\\GraphQL\\Mutations'],
-    'subscriptions' => ['App\\GraphQL\\Subscriptions', 'Bu\\DAL\\GraphQL\\Subscriptions'],
-    'types' => ['App\\GraphQL\\Types', 'Bu\\DAL\\GraphQL\\Types'],
-    'interfaces' => ['App\\GraphQL\\Interfaces', 'Bu\\DAL\\GraphQL\\Interfaces'],
-    'unions' => ['App\\GraphQL\\Unions', 'Bu\\DAL\\GraphQL\\Unions'],
-    'scalars' => ['App\\GraphQL\\Scalars', 'Bu\\DAL\\GraphQL\\Scalars'],
-],
+```bash
+php artisan serve --host=0.0.0.0
 ```
 
-## 📁 Package Structure
+## Usage
 
-```
-bu-dal-package/
-├── src/
-│   ├── Console/Commands/          # Artisan commands
-│   │   ├── SendAuditReminders.php
-│   │   ├── SendCorrectiveActionReminders.php
-│   │   ├── TestAuditPlanAccess.php
-│   │   └── TestAuditSystem.php
-│   ├── Database/
-│   │   ├── DatabaseManager.php   # Database connection manager
-│   │   └── Repositories/         # Repository pattern implementation
-│   │       ├── BaseRepository.php
-│   │       ├── AssetRepository.php
-│   │       ├── EmployeeRepository.php
-│   │       ├── LocationRepository.php
-│   │       ├── ProjectRepository.php
-│   │       ├── UserRepository.php
-│   │       ├── AuditPlanRepository.php
-│   │       ├── AuditAssetRepository.php
-│   │       ├── AuditAssignmentRepository.php
-│   │       ├── CorrectiveActionRepository.php
-│   │       └── CorrectiveActionAssignmentRepository.php
-│   ├── Exceptions/               # Custom exception classes
-│   │   ├── DatabaseException.php
-│   │   ├── GraphQLException.php
-│   │   ├── RepositoryException.php
-│   │   └── TransactionException.php
-│   ├── GraphQL/
-│   │   ├── Mutations/            # GraphQL mutations
-│   │   │   ├── AssetMutations.php
-│   │   │   ├── AuditPlanMutations.php
-│   │   │   ├── CreateAuditPlan.php
-│   │   │   ├── UpdateAuditPlan.php
-│   │   │   ├── EmployeeMutations.php
-│   │   │   ├── LocationMutations.php
-│   │   │   ├── ProjectMutations.php
-│   │   │   ├── UserMutations.php
-│   │   │   ├── CorrectiveActionMutations.php
-│   │   │   ├── CorrectiveActionAssignmentMutations.php
-│   │   │   ├── UpdateAuditAsset.php
-│   │   │   └── UpdateAuditAssignment.php
-│   │   └── Queries/              # GraphQL queries
-│   │       ├── AssetQueries.php
-│   │       ├── AuditAssetQueries.php
-│   │       ├── AuditAssignmentQueries.php
-│   │       ├── AuditPlanQueries.php
-│   │       ├── CorrectiveActionQueries.php
-│   │       ├── EmployeeQueries.php
-│   │       ├── LocationQueries.php
-│   │       ├── ProjectQueries.php
-│   │       └── UserQueries.php
-│   ├── Http/Middleware/          # HTTP middleware
-│   │   └── GraphQLCors.php
-│   ├── Mail/                     # Email templates
-│   │   ├── AuditAccessEmail.php
-│   │   ├── AuditPlanNotificationEmail.php
-│   │   ├── AuditReminderEmail.php
-│   │   ├── ConsolidatedCorrectiveActionEmail.php
-│   │   └── CorrectiveActionNotificationEmail.php
-│   ├── Models/                   # Eloquent models
-│   │   ├── Asset.php
-│   │   ├── AuditAsset.php
-│   │   ├── AuditAssignment.php
-│   │   ├── AuditLog.php
-│   │   ├── AuditPlan.php
-│   │   ├── CorrectiveAction.php
-│   │   ├── CorrectiveActionAssignment.php
-│   │   ├── Employee.php
-│   │   ├── Location.php
-│   │   ├── Project.php
-│   │   └── User.php
-│   ├── Providers/
-│   │   └── DALServiceProvider.php # Laravel service provider
-│   ├── Routes/
-│   │   └── api.php               # API routes (1,500+ lines)
-│   └── Services/                 # Business logic services
-│       ├── AuditNotificationService.php
-│       └── CorrectiveActionNotificationService.php
-├── database/migrations/          # Database migrations (32 files)
-├── graphql/
-│   └── schema.graphql            # GraphQL schema
-├── config/
-│   └── dal.php                   # Package configuration
-└── tests/                        # Unit and feature tests
-```
+The package provides:
 
-## 🎯 Available Models
+1. GraphQL API endpoints at `/graphql`
+2. REST API endpoints at `/api`
+3. Authentication endpoints
+4. File storage handling
+5. Audit system
+6. Email notifications
 
-| Model                          | Description         | Key Features                                   |
-| ------------------------------ | ------------------- | ---------------------------------------------- |
-| **Asset**                      | Asset management    | Status tracking, location, employee assignment |
-| **Employee**                   | Employee management | Email, location, project assignments           |
-| **Location**                   | Location management | Multi-location support, visibility controls    |
-| **Project**                    | Project management  | Project assignments, ordering                  |
-| **User**                       | User authentication | Basic user management                          |
-| **AuditPlan**                  | Audit planning      | Comprehensive audit workflow                   |
-| **AuditAsset**                 | Asset auditing      | Status tracking, auditor notes                 |
-| **AuditAssignment**            | Auditor assignments | Assignment management                          |
-| **AuditLog**                   | Audit logging       | Complete audit trail                           |
-| **CorrectiveAction**           | Corrective actions  | Action tracking, assignments                   |
-| **CorrectiveActionAssignment** | Action assignments  | Employee assignments                           |
+### REST API Endpoints
 
-## 🔧 GraphQL API
+The package provides the following REST API endpoints:
 
-### Queries
+#### Assets
 
-- `assets` - List all assets with filtering and pagination
-- `employees` - List all employees
-- `locations` - List all locations
-- `projects` - List all projects
-- `auditPlans` - List all audit plans
-- `auditAssets` - List audit assets
-- `auditAssignments` - List audit assignments
-- `correctiveActions` - List corrective actions
+- `GET /api/assets` - List all assets
+- `GET /api/assets/{id}` - Get asset details
+- `POST /api/assets` - Create new asset
+- `PUT /api/assets/{id}` - Update asset
+- `DELETE /api/assets/{id}` - Delete asset
+- `GET /api/assets/type/{type}` - Get assets by type
 
-### Mutations
+#### Audits
 
-#### Asset Management
-
-- `upsertAsset` - Create or update asset
-- `bulkUpsertAssets` - Bulk create/update assets
-- `deleteAsset` - Delete asset
-
-#### Employee Management
-
-- `createEmployee` - Create employee
-- `updateEmployee` - Update employee
-- `upsertEmployee` - Create or update employee
-- `bulkUpsertEmployees` - Bulk create/update employees
-- `deleteEmployee` - Delete employee
-
-#### Audit Management
-
-- `createAuditPlan` - Create audit plan
-- `updateAuditPlan` - Update audit plan
-- `updateAuditAsset` - Update audit asset status
-- `completeAuditAssignment` - Complete audit assignment
+- `GET /api/audits/plans` - List audit plans
+- `POST /api/audits/plans` - Create audit plan
+- `GET /api/audits/plans/{id}` - Get audit plan details
+- `PUT /api/audits/plans/{id}` - Update audit plan
+- `GET /api/audits/assignments` - List audit assignments
 
 #### Corrective Actions
 
-- `createCorrectiveAction` - Create corrective action
-- `updateCorrectiveAction` - Update corrective action
-- `assignCorrectiveAction` - Assign corrective action to employee
-- `updateCorrectiveActionAssignmentStatus` - Update assignment status
-
-## 🌐 REST API Endpoints
-
-The package automatically registers comprehensive REST API endpoints:
-
-### Asset Management
-
-- `GET /api/assets` - List assets
-- `POST /api/assets` - Create asset
-- `PUT /api/assets/{id}` - Update asset
-- `DELETE /api/assets/{id}` - Delete asset
-
-### Employee Management
-
-- `GET /api/employees` - List employees
-- `POST /api/employees` - Create employee
-- `PUT /api/employees/{id}` - Update employee
-- `DELETE /api/employees/{id}` - Delete employee
-
-### Audit System
-
-- `GET /api/audit-plans` - List audit plans
-- `POST /api/audit-plans` - Create audit plan
-- `PUT /api/audit-plans/{id}` - Update audit plan
-- `GET /api/employee-audits/access/{token}` - Employee audit access
-- `POST /api/employee-audits/update-asset/{token}` - Update asset status
-
-### Corrective Actions
-
 - `GET /api/corrective-actions` - List corrective actions
 - `POST /api/corrective-actions` - Create corrective action
+- `GET /api/corrective-actions/{id}` - Get corrective action details
 - `PUT /api/corrective-actions/{id}` - Update corrective action
-- `POST /api/corrective-actions/assign` - Assign corrective action
+- `GET /api/corrective-actions/{id}/assignments` - List assignments
 
-## ⚡ Console Commands
+## Client Integration
+
+Update your client application's `.env` file to point to your new server:
+
+```env
+NEXT_PUBLIC_API_URL=http://your-server-url/graphql
+```
+
+## Available Commands
 
 ```bash
 # Send audit reminders
-php artisan audits:send-reminders
+php artisan server:audits:send-reminders
 
 # Send corrective action reminders
-php artisan corrective-actions:send-reminders
-
-# Test audit plan access
-php artisan audits:test-access {audit_plan_id} {employee_email}
-
-# Test audit system
-php artisan audits:test-system
+php artisan server:corrective-actions:send-reminders
 ```
 
-## 📧 Email Notifications
-
-The package includes comprehensive email notification system:
-
-- **Audit Access Email** - Employee audit access links
-- **Audit Plan Notifications** - Audit plan creation/updates
-- **Audit Reminders** - Pending audit reminders
-- **Corrective Action Notifications** - Action assignments and updates
-- **Consolidated Emails** - Grouped notifications to reduce email spam
-
-## 🔧 Configuration
-
-### Package Configuration (`config/dal.php`)
-
-```php
-return [
-    'database' => [
-        'connection' => env('DB_CONNECTION', 'mysql'),
-        'prefix' => env('DB_PREFIX', ''),
-    ],
-    'graphql' => [
-        'enabled' => env('DAL_GRAPHQL_ENABLED', true),
-        'schema_path' => env('DAL_GRAPHQL_SCHEMA_PATH', 'graphql/schema.graphql'),
-    ],
-    'notifications' => [
-        'audit_reminders' => [
-            'enabled' => env('DAL_AUDIT_REMINDERS_ENABLED', true),
-            'days_before' => env('DAL_AUDIT_REMINDER_DAYS', 3),
-        ],
-        'corrective_actions' => [
-            'enabled' => env('DAL_CORRECTIVE_ACTION_NOTIFICATIONS_ENABLED', true),
-        ],
-    ],
-];
-```
-
-## 🧪 Testing
-
-Run the package tests:
+## Testing
 
 ```bash
-# Run all tests
 composer test
-
-# Run specific test suite
-./vendor/bin/phpunit tests/Unit/
-./vendor/bin/phpunit tests/Feature/
 ```
 
-## 🚀 Usage Examples
+## License
 
-### Using Repositories
-
-```php
-use Bu\DAL\Database\Repositories\AssetRepository;
-
-// Get asset repository
-$assetRepo = app(AssetRepository::class);
-
-// Find asset by ID
-$asset = $assetRepo->find(1);
-
-// Find assets by status
-$activeAssets = $assetRepo->where('status', 'active')->get();
-
-// Create new asset
-$asset = $assetRepo->create([
-    'asset_id' => 'ASSET-001',
-    'name' => 'Laptop Computer',
-    'status' => 'active',
-    'location_id' => 1,
-]);
-```
-
-### Using GraphQL
-
-```graphql
-# Query assets
-query {
-  assets(first: 10) {
-    data {
-      id
-      asset_id
-      name
-      status
-      location {
-        name
-      }
-      employee {
-        name
-        email
-      }
-    }
-  }
-}
-
-# Create audit plan
-mutation {
-  createAuditPlan(
-    name: "Q1 2024 Audit"
-    start_date: "2024-01-01"
-    due_date: "2024-03-31"
-    locations: [1, 2, 3]
-    auditors: [1, 2]
-  ) {
-    id
-    name
-    status
-  }
-}
-```
-
-### Using REST API
-
-```bash
-# Get all assets
-curl -X GET http://your-app.com/api/assets
-
-# Create new employee
-curl -X POST http://your-app.com/api/employees \
-  -H "Content-Type: application/json" \
-  -d '{"name": "John Doe", "email": "john@example.com"}'
-```
-
-## 🔄 Migration from Existing Server
-
-If you're migrating from an existing Laravel server, the package now includes all necessary files:
-
-1. **Install the package** in your new Laravel project
-2. **Run the automated installer**: `php artisan dal:install`
-3. **Configure your database** in `.env` file
-4. **Run migrations**: `php artisan migrate`
-5. **Configure mail settings** in `.env` file
-
-### ✅ Included Files
-
-The package now includes all necessary files:
+The MIT License (MIT)
 
 ```
-bu-dal-package/resources/
-├── views/
-│   ├── emails/
-│   │   ├── audit-access.blade.php
-│   │   ├── audit-plan-notification.blade.php
-│   │   ├── audit-reminder.blade.php
-│   │   ├── consolidated-corrective-action.blade.php
-│   │   └── corrective-action-notification.blade.php
-│   └── graphql-playground.blade.php
-└── Http/
-    └── Controllers/
-        └── Controller.php
+
 ```
-
-**No manual copying required!** The `php artisan dal:install` command handles everything automatically.
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **GraphQL endpoint not found**
-
-   - Ensure Lighthouse is properly configured
-   - Check that the route is set to `/api/graphql`
-   - Clear route cache: `php artisan route:clear`
-
-2. **REST API endpoints not working**
-
-   - Ensure the package service provider is registered
-   - Check that API routes are enabled in `bootstrap/app.php`
-   - Clear route cache: `php artisan route:clear`
-
-3. **Database connection issues**
-
-   - Verify your `.env` database configuration
-   - Ensure MySQL is running (XAMPP)
-   - Test connection: `php artisan tinker` then `DB::connection()->getPdo()`
-
-4. **Migration errors**
-
-   - Ensure database exists
-   - Check database permissions
-   - Run migrations individually if needed
-
-5. **Email notifications not working**
-   - Configure mail settings in `.env`
-   - Check mail queue configuration
-   - **Run `php artisan dal:install` to publish email templates**
-   - Verify email templates exist in `resources/views/emails/`
-   - Check Laravel logs for "View not found" errors
-
-### Debug Commands
-
-```bash
-# Test the audit system
-php artisan audits:test-system
-
-# Check package installation
-composer show bu/dal-package
-
-# Clear all caches
-php artisan cache:clear
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-```
-
-## 📝 Changelog
-
-### Version 1.0.0
-
-- ✅ Complete Data Access Layer implementation
-- ✅ 11 Eloquent models with relationships
-- ✅ 32 database migrations
-- ✅ 12 GraphQL mutations
-- ✅ 9 GraphQL queries
-- ✅ 1,500+ lines of REST API routes
-- ✅ Repository pattern implementation
-- ✅ Email notification system
-- ✅ Console commands for maintenance
-- ✅ CORS middleware support
-- ✅ Comprehensive testing suite
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
-
-## 📄 License
-
-This package is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-## 🆘 Support
-
-For support and questions:
-
-- Create an issue on GitHub
-- Check the troubleshooting section
-- Review the test files for usage examples
-
----
-
-**Made with ❤️ for Business Unit applications**

@@ -1,9 +1,10 @@
 <?php
 
-namespace Bu\DAL\Models;
+namespace Bu\Server\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Bu\Server\Traits\Auditable;
 
 class Asset extends Model
 {

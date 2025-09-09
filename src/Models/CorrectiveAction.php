@@ -1,15 +1,25 @@
 <?php
 
-namespace Bu\DAL\Models;
+namespace Bu\Server\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Bu\Server\Traits\Auditable;
+use Bu\Server\Services\CorrectiveActionNotificationService;
 
 class CorrectiveAction extends Model
 {
     use HasFactory;
+
+    protected static function booted()
+    {
+        static::created(function ($correctiveAction) {
+            $notificationService = app(CorrectiveActionNotificationService::class);
+            $notificationService->sendCorrectiveActionNotification($correctiveAction);
+        });
+    }
 
     protected $fillable = [
         'audit_asset_id',
@@ -113,7 +123,7 @@ class CorrectiveAction extends Model
     /**
      * Mark the action as completed and check if audit asset should be updated.
      */
-    public function markAsCompleted(?string $notes = null, ?string $resolutionStatus = null): bool
+    public function markAsCompleted(string $notes = null, string $resolutionStatus = null): bool
     {
         $this->update([
             'status' => 'completed',
@@ -165,7 +175,7 @@ class CorrectiveAction extends Model
     /**
      * Bulk update multiple corrective actions status.
      */
-    public static function bulkUpdateStatus(array $actionIds, string $status, ?string $notes = null): array
+    public static function bulkUpdateStatus(array $actionIds, string $status, string $notes = null): array
     {
         $results = [];
 

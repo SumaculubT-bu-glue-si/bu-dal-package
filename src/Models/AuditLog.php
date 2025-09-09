@@ -1,10 +1,11 @@
 <?php
 
-namespace Bu\DAL\Models;
+namespace Bu\Server\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Bu\Server\Traits\Auditable;
 
 class AuditLog extends Model
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mail;
+namespace Bu\Server\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -43,7 +43,7 @@ class AuditAccessEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.audit-access',
+            view: 'server::emails.audit-access',
             with: [
                 'accessUrl' => $this->accessUrl,
                 'expiresAt' => $this->expiresAt,

@@ -1,18 +1,13 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Queries;
+namespace Bu\Server\GraphQL\Queries;
 
-use Bu\DAL\Models\Project;
-use Bu\DAL\Database\Repositories\ProjectRepository;
+use Bu\Server\Models\Project;
 use GraphQL\Type\Definition\ResolveInfo;
 use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
 
 class ProjectQueries
 {
-    public function __construct(
-        private ProjectRepository $projectRepository
-    ) {}
-
     /**
      * Find a single project by ID
      */

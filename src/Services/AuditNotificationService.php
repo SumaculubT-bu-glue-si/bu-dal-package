@@ -1,20 +1,99 @@
 <?php
 
-namespace Bu\DAL\Services;
+namespace Bu\Server\Services;
 
-use Bu\DAL\Models\AuditPlan;
-use Bu\DAL\Models\Employee;
-use Bu\DAL\Models\Asset;
-use Bu\DAL\Database\Repositories\LocationRepository;
-use Bu\DAL\Database\Repositories\EmployeeRepository;
-use Bu\DAL\Database\DatabaseManager;
+use Bu\Server\Models\AuditPlan;
+use Bu\Server\Models\Employee;
+use Bu\Server\Models\Asset;
+use Bu\Server\Mail\AuditPlanNotificationEmail;
+use Bu\Server\Mail\AuditReminderEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
-use App\Mail\AuditPlanNotificationEmail;
-use App\Mail\AuditReminderEmail;
 
 class AuditNotificationService
 {
+    /**
+     * Handle an audit access request from an employee
+     * 
+     * @param string $email Employee email
+     * @param string|int $auditPlanId Audit plan ID
+     * @return array Response data
+     */
+    public function handleAccessRequest($email, $auditPlanId)
+    {
+        try {
+            Log::info('Processing access request', [
+                'email' => $email,
+                'audit_plan_id' => $auditPlanId
+            ]);
+
+            // Check if audit plan exists
+            $auditPlan = AuditPlan::findOrFail($auditPlanId);
+
+            // Find employee by email
+            $employee = Employee::where('email', $email)->first();
+
+            if (!$employee) {
+                Log::warning('Employee not found', ['email' => $email]);
+                return [
+                    'success' => false,
+                    'message' => 'Employee not found with the provided email.',
+                    'status' => 404
+                ];
+            }
+
+            // Check if employee has any assets in the audit
+            $hasAssets = Asset::where('user', $email)
+                ->whereIn('location', function ($query) use ($auditPlan) {
+                    $query->select('name')
+                        ->from('locations')
+                        ->whereIn('id', $auditPlan->location_ids);
+                })
+                ->exists();
+
+            if (!$hasAssets) {
+                Log::warning('No assets for employee in this audit', [
+                    'email' => $email,
+                    'audit_plan_id' => $auditPlanId
+                ]);
+                return [
+                    'success' => false,
+                    'message' => 'No assets assigned to this employee in the selected audit.',
+                    'status' => 404
+                ];
+            }
+
+            // Get assigned assets for this employee
+            $assignedAssets = Asset::where('user', $email)
+                ->whereIn('location', function ($query) use ($auditPlan) {
+                    $query->select('name')
+                        ->from('locations')
+                        ->whereIn('id', $auditPlan->location_ids);
+                })
+                ->get();
+
+            // Send notification email with a 7-day due date
+            $dueDate = now()->addDays(7);
+            Mail::to($email)->send(new AuditPlanNotificationEmail($auditPlan, $employee, $assignedAssets, $dueDate));
+
+            return [
+                'success' => true,
+                'message' => 'Access request processed successfully. Please check your email for audit instructions.',
+                'status' => 200
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error handling access request: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to process access request: ' . $e->getMessage(),
+                'status' => 500
+            ];
+        }
+    }
+
     /**
      * Send initial audit notifications to all employees with assets in audited locations
      */
@@ -28,8 +107,17 @@ class AuditNotificationService
                 'location_ids' => $locationIds
             ]);
 
+            // Debug log for SMTP settings
+            Log::info('Mail configuration:', [
+                'driver' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+                'port' => config('mail.mailers.smtp.port'),
+                'from_address' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+            ]);
+
             // Get location names from IDs
-            $locationNames = \App\Models\Location::whereIn('id', $locationIds)->pluck('name')->toArray();
+            $locationNames = \Bu\Server\Models\Location::whereIn('id', $locationIds)->pluck('name')->toArray();
 
             if (empty($locationNames)) {
                 Log::warning('No locations found for notification', [
@@ -131,23 +219,46 @@ class AuditNotificationService
                 ->get();
 
             // Send notification email
-            Mail::to($employee->email)->send(new AuditPlanNotificationEmail(
-                $auditPlan,
-                $employee,
-                $assignedAssets,
-                $auditPlan->due_date
-            ));
+            try {
+                $email = new AuditPlanNotificationEmail(
+                    $auditPlan,
+                    $employee,
+                    $assignedAssets,
+                    $auditPlan->due_date
+                );
 
-            Log::info('Audit notification sent successfully', [
-                'employee_id' => $employee->id,
-                'employee_email' => $employee->email,
-                'audit_plan_id' => $auditPlan->id,
-                'assets_count' => $assignedAssets->count()
-            ]);
+                Log::info('Attempting to send email', [
+                    'to' => $employee->email,
+                    'view' => 'server::emails.audit-plan-notification',
+                    'smtp_config' => [
+                        'host' => config('mail.mailers.smtp.host'),
+                        'port' => config('mail.mailers.smtp.port'),
+                        'encryption' => config('mail.mailers.smtp.encryption'),
+                        'from_address' => config('mail.from.address'),
+                    ]
+                ]);
 
-            return true;
+                Mail::to($employee->email)->send($email);
+
+                Log::info('Audit notification sent successfully', [
+                    'employee_id' => $employee->id,
+                    'employee_email' => $employee->email,
+                    'audit_plan_id' => $auditPlan->id,
+                    'assets_count' => $assignedAssets->count()
+                ]);
+
+                return true;
+            } catch (\Exception $e) {
+                Log::error('Failed to send audit notification to employee', [
+                    'employee_id' => $employee->id,
+                    'employee_email' => $employee->email,
+                    'audit_plan_id' => $auditPlan->id,
+                    'error' => $e->getMessage()
+                ]);
+                return false;
+            }
         } catch (\Exception $e) {
-            Log::error('Failed to send audit notification to employee', [
+            Log::error('Failed to prepare audit notification', [
                 'employee_id' => $employee->id,
                 'employee_email' => $employee->email,
                 'audit_plan_id' => $auditPlan->id,

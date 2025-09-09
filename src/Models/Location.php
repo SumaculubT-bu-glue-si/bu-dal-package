@@ -1,9 +1,11 @@
 <?php
 
-namespace Bu\DAL\Models;
+namespace Bu\Server\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Bu\Server\Traits\Auditable;
 
 class Location extends Model
 {
@@ -41,5 +43,21 @@ class Location extends Model
     public function auditAssignments(): HasMany
     {
         return $this->hasMany(AuditAssignment::class);
+    }
+
+    /**
+     * Get the parent location.
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'parent_id');
+    }
+
+    /**
+     * Get the child locations.
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(Location::class, 'parent_id');
     }
 }

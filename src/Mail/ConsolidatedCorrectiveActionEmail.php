@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mail;
+namespace Bu\Server\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -45,7 +45,7 @@ class ConsolidatedCorrectiveActionEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.consolidated-corrective-action',
+            view: 'bu-server::emails.consolidated-corrective-action',
             with: [
                 'correctiveActions' => $this->correctiveActions,
                 'employee' => $this->employee,

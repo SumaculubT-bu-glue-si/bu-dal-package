@@ -1,11 +1,12 @@
 <?php
 
-namespace Bu\DAL\Models;
+namespace Bu\Server\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Bu\Server\Traits\Auditable;
 
 class AuditPlan extends Model
 {
@@ -103,7 +104,7 @@ class AuditPlan extends Model
      */
     public function correctiveActions()
     {
-        return $this->hasMany(CorrectiveAction::class);
+        return $this->hasMany(\Bu\Server\Models\CorrectiveAction::class);
     }
 
     /**
@@ -114,7 +115,7 @@ class AuditPlan extends Model
         $totalAssets = $this->auditAssets()->count();
         $auditedAssets = $this->auditAssets()->where('audit_status', true)->count();
         $resolvedAssets = $this->auditAssets()->where('resolved', true)->count();
-
+        
         $totalActions = $this->correctiveActions()->count();
         $completedActions = $this->correctiveActions()->where('status', 'completed')->count();
         $pendingActions = $totalActions - $completedActions;
