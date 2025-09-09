@@ -52,6 +52,7 @@ Route::get('corrective-actions', [CorrectiveActionController::class, 'index']);
 Route::get('corrective-actions/{id}', [CorrectiveActionController::class, 'show']);
 Route::post('corrective-actions', [CorrectiveActionController::class, 'store']);
 Route::put('corrective-actions/{id}', [CorrectiveActionController::class, 'update']);
+Route::post('corrective-actions/{id}/update', [CorrectiveActionController::class, 'update']);
 Route::delete('corrective-actions/{id}', [CorrectiveActionController::class, 'destroy']);
 Route::post('corrective-actions/send-reminders', [CorrectiveActionController::class, 'sendReminders']);
 
