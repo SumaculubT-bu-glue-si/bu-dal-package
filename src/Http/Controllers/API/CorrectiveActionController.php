@@ -82,6 +82,38 @@ class CorrectiveActionController extends Controller
     }
 
     /**
+     * Update the status of a corrective action.
+     */
+    public function updateActionStatus(Request $request, $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|in:open,in_progress,completed,verified',
+            'comment' => 'nullable|string'
+        ]);
+
+        $action = CorrectiveAction::findOrFail($id);
+        
+        // Create an update record
+        $update = $action->updates()->create([
+            'status' => $validated['status'],
+            'comment' => $validated['comment'] ?? null,
+            'user_id' => $request->user_id ?? null
+        ]);
+
+        // Update the main corrective action status
+        $action->status = $validated['status'];
+        $action->save();
+
+        // Load relationships for the response
+        $action->load(['updates', 'auditAsset.asset', 'auditPlan', 'assignedTo']);
+
+        return response()->json([
+            'data' => $action,
+            'message' => 'Status updated successfully'
+        ]);
+    }
+
+    /**
      * Add an update to a corrective action.
      */
     public function addUpdate(Request $request, CorrectiveAction $action): JsonResponse
@@ -161,7 +193,7 @@ class CorrectiveActionController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function updateActionStatus(Request $request, int $id): JsonResponse
+    public function updateStatus(Request $request, int $id): JsonResponse
     {
         try {
             // Different validation rules based on whether a token is provided
