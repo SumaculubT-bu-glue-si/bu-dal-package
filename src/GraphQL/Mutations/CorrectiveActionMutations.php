@@ -139,27 +139,66 @@ class CorrectiveActionMutations
         
         $status = $args['status'];
         $notes = $args['notes'] ?? null;
-        
-        $updateData = [
-            'status' => $status,
-            'notes' => $notes ? $correctiveAction->notes . "\n\nStatus Update: " . $notes : $correctiveAction->notes,
-        ];
-        
-        // If status is completed, set completed_date
+
+        // If status is completed, use markAsCompleted to handle cascading updates
         if ($status === 'completed') {
-            $updateData['completed_date'] = Carbon::now();
+            $resolutionStatus = $correctiveAction->getResolutionStatus();
+            $success = $correctiveAction->markAsCompleted($notes, $resolutionStatus);
+            if (!$success) {
+                throw new \Exception('Failed to mark corrective action as completed');
+            }
+
+            // Also mark the assignment as completed
+            if ($assignment = $correctiveAction->assignment) {
+                $assignment->markAsCompleted();
+                if ($notes) {
+                    $assignment->updateProgressNotes($notes);
+                }
+            }
         } else {
-            $updateData['completed_date'] = null;
+            // For other statuses, just update the corrective action
+            $updateData = [
+                'status' => $status,
+                'notes' => $notes ? $correctiveAction->notes . "\n\nStatus Update: " . $notes : $correctiveAction->notes,
+            ];
+            
+            // If status is overdue, check if due date has passed
+            if ($status !== 'completed' && $correctiveAction->due_date < Carbon::now()) {
+                $updateData['status'] = 'overdue';
+            }
+            
+            $correctiveAction->update($updateData);
+
+            // Update assignment status to match
+            if ($assignment = $correctiveAction->assignment) {
+                $assignment->update(['status' => $status]);
+                if ($notes) {
+                    $assignment->updateProgressNotes($notes);
+                }
+            }
         }
         
-        // If status is overdue, check if due date has passed
-        if ($status !== 'completed' && $correctiveAction->due_date < Carbon::now()) {
-            $updateData['status'] = 'overdue';
+        // Send notifications for status change
+        try {
+            $notificationService = new CorrectiveActionNotificationService();
+            $notificationResult = $notificationService->sendCorrectiveActionNotification($correctiveAction);
+            
+            Log::info('Corrective action notification sent after status update', [
+                'corrective_action_id' => $correctiveAction->id,
+                'new_status' => $status,
+                'notification_result' => $notificationResult
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send corrective action notification after status update', [
+                'corrective_action_id' => $correctiveAction->id,
+                'error' => $e->getMessage()
+            ]);
+            // Don't fail the status update if notification fails
         }
         
-        $correctiveAction->update($updateData);
-        
-        return $correctiveAction->load(['auditAsset.asset', 'auditPlan']);
+        // Refresh relationships to get updated data
+        $correctiveAction->refresh();
+        return $correctiveAction->load(['auditAsset.asset', 'auditPlan', 'assignment']);
     }
     
     /**
