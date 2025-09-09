@@ -77,7 +77,17 @@ class CorrectiveActionController extends Controller
      */
     public function destroy(CorrectiveAction $action): JsonResponse
     {
+        // Load the audit asset before deletion to check if we need to update statuses
+        $auditAsset = $action->auditAsset;
+        
         $action->delete();
+        
+        // If this was the last corrective action for the audit asset, update its status
+        if ($auditAsset && $auditAsset->correctiveActions()->count() === 0) {
+            $auditAsset->update(['resolved' => true]);
+            $auditAsset->updateMainAssetDirectly();
+        }
+        
         return response()->json(null, 204);
     }
 
@@ -187,16 +197,50 @@ class CorrectiveActionController extends Controller
             }
 
             // Update the action status
-            $action->status = $status;
-            if ($notes) {
-                $action->notes = $action->notes
-                    ? $action->notes . "\n[" . now()->format('Y-m-d H:i:s') . "] " . $notes
-                    : "[" . now()->format('Y-m-d H:i:s') . "] " . $notes;
-            }
             if ($status === 'completed') {
-                $action->completed_date = now();
+                // Get the proper resolution status based on the asset's original issue
+                $resolutionStatus = $action->getResolutionStatus();
+                
+                \Illuminate\Support\Facades\Log::info('Processing corrective action completion', [
+                    'action_id' => $action->id,
+                    'resolution_status' => $resolutionStatus
+                ]);
+
+                // Use markAsCompleted to handle all cascading updates
+                $success = $action->markAsCompleted($notes, $resolutionStatus);
+                
+                if (!$success) {
+                    throw new \Exception('Failed to complete corrective action and update related tables');
+                }
+
+                // Force update the audit asset if needed
+                if ($auditAsset = $action->auditAsset) {
+                    \Illuminate\Support\Facades\Log::info('Forcing audit asset update', [
+                        'audit_asset_id' => $auditAsset->id,
+                        'new_status' => $resolutionStatus
+                    ]);
+                    
+                    $auditAsset->update([
+                        'current_status' => $resolutionStatus,
+                        'resolved' => true,
+                        'auditor_notes' => ($auditAsset->auditor_notes ? $auditAsset->auditor_notes . "\n\n" : '') .
+                            "[" . now()->format('Y-m-d H:i:s') . "] Corrective action completed. Status updated to: " . $resolutionStatus .
+                            ($notes ? "\nResolution notes: " . $notes : '')
+                    ]);
+
+                    // Force main asset update
+                    $auditAsset->updateMainAssetDirectly();
+                }
+            } else {
+                // For other statuses, just update the corrective action
+                $action->status = $status;
+                if ($notes) {
+                    $action->notes = $action->notes
+                        ? $action->notes . "\n[" . now()->format('Y-m-d H:i:s') . "] " . $notes
+                        : "[" . now()->format('Y-m-d H:i:s') . "] " . $notes;
+                }
+                $action->save();
             }
-            $action->save();
 
             return response()->json([
                 'success' => true,
@@ -226,15 +270,30 @@ class CorrectiveActionController extends Controller
 
         $updatedActions = collect($validated['actions'])->map(function ($actionData) {
             $action = CorrectiveAction::find($actionData['id']);
+            $notes = $actionData['comment'] ?? 'Status updated via bulk update';
 
-            $update = $action->updates()->create([
-                'comment' => $actionData['comment'] ?? 'Status updated via bulk update',
-                'status' => $actionData['status'],
-                'user_id' => request()->user()->id
-            ]);
+            if ($actionData['status'] === 'completed') {
+                // Get resolution status and handle cascading updates
+                $resolutionStatus = $action->getResolutionStatus();
+                $success = $action->markAsCompleted($notes, $resolutionStatus);
+                
+                if (!$success) {
+                    \Illuminate\Support\Facades\Log::error('Failed to complete corrective action in bulk update', [
+                        'action_id' => $action->id
+                    ]);
+                    throw new \Exception("Failed to complete corrective action {$action->id}");
+                }
+            } else {
+                // For other statuses, create update record and update status
+                $update = $action->updates()->create([
+                    'comment' => $notes,
+                    'status' => $actionData['status'],
+                    'user_id' => request()->user()->id
+                ]);
 
-            $action->status = $actionData['status'];
-            $action->save();
+                $action->status = $actionData['status'];
+                $action->save();
+            }
 
             return $action;
         });
