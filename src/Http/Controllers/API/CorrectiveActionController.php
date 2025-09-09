@@ -161,7 +161,7 @@ class CorrectiveActionController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateActionStatus(Request $request, int $id): JsonResponse
     {
         try {
             // Different validation rules based on whether a token is provided
