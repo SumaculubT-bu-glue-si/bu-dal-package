@@ -40,7 +40,7 @@ Add this to your `composer.json`:
 ### Step 3: Install required packages
 
 ```bash
-composer require bu/server:dev-master
+composer require bu/server:dev-main
 composer require doctrine/dbal
 composer require nuwave/lighthouse
 composer require laravel/sanctum

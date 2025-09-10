@@ -79,15 +79,15 @@ class CorrectiveActionController extends Controller
     {
         // Load the audit asset before deletion to check if we need to update statuses
         $auditAsset = $action->auditAsset;
-        
+
         $action->delete();
-        
+
         // If this was the last corrective action for the audit asset, update its status
         if ($auditAsset && $auditAsset->correctiveActions()->count() === 0) {
             $auditAsset->update(['resolved' => true]);
             $auditAsset->updateMainAssetDirectly();
         }
-        
+
         return response()->json(null, 204);
     }
 
@@ -200,7 +200,7 @@ class CorrectiveActionController extends Controller
             if ($status === 'completed') {
                 // Get the proper resolution status based on the asset's original issue
                 $resolutionStatus = $action->getResolutionStatus();
-                
+
                 \Illuminate\Support\Facades\Log::info('Processing corrective action completion', [
                     'action_id' => $action->id,
                     'resolution_status' => $resolutionStatus
@@ -208,7 +208,7 @@ class CorrectiveActionController extends Controller
 
                 // Use markAsCompleted to handle all cascading updates
                 $success = $action->markAsCompleted($notes, $resolutionStatus);
-                
+
                 if (!$success) {
                     throw new \Exception('Failed to complete corrective action and update related tables');
                 }
@@ -219,7 +219,7 @@ class CorrectiveActionController extends Controller
                         'audit_asset_id' => $auditAsset->id,
                         'new_status' => $resolutionStatus
                     ]);
-                    
+
                     $auditAsset->update([
                         'current_status' => $resolutionStatus,
                         'resolved' => true,
@@ -276,7 +276,7 @@ class CorrectiveActionController extends Controller
                 // Get resolution status and handle cascading updates
                 $resolutionStatus = $action->getResolutionStatus();
                 $success = $action->markAsCompleted($notes, $resolutionStatus);
-                
+
                 if (!$success) {
                     \Illuminate\Support\Facades\Log::error('Failed to complete corrective action in bulk update', [
                         'action_id' => $action->id
