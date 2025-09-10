@@ -16,6 +16,7 @@ class Employee extends Model
         'name',
         'email',
         'location',
+        'org_unit_path',
         'projects',
     ];
 
@@ -46,5 +47,20 @@ class Employee extends Model
     public function auditAssignments()
     {
         return $this->hasMany(AuditAssignment::class, 'auditor_id');
+    }
+
+    /**
+     * Get available organizational units
+     */
+    public static function getAvailableOrgUnits(): array
+    {
+        return [
+            '/' => 'Root Organization',
+            '/テスト' => 'テスト (Test)',
+            '/一般' => '一般 (General)',
+            '/営業' => '営業 (Sales)',
+            '/開発' => '開発 (Development)',
+            '/管理' => '管理 (Administration)',
+        ];
     }
 }
