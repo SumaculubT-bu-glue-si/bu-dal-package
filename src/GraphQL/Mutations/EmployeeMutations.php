@@ -55,7 +55,6 @@ class EmployeeMutations
         }
 
         $employee->update([
-            'employee_id' => $input['employee_id'],
             'name' => $input['name'],
             'email' => $input['email'] ?? null,
             'location' => $input['location'] ?? null,
