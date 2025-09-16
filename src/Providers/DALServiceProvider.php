@@ -1,32 +1,32 @@
 <?php
 
-namespace Bu\DAL\Providers;
+namespace Bu\Server\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Config;
-use Bu\DAL\Database\DatabaseManager;
-use Bu\DAL\Database\Repositories\AssetRepository;
-use Bu\DAL\Database\Repositories\EmployeeRepository;
-use Bu\DAL\Database\Repositories\LocationRepository;
-use Bu\DAL\Database\Repositories\ProjectRepository;
-use Bu\DAL\Database\Repositories\UserRepository;
-use Bu\DAL\Database\Repositories\AuditPlanRepository;
-use Bu\DAL\Database\Repositories\AuditAssetRepository;
-use Bu\DAL\Database\Repositories\AuditAssignmentRepository;
-use Bu\DAL\Database\Repositories\CorrectiveActionRepository;
-use Bu\DAL\Database\Repositories\CorrectiveActionAssignmentRepository;
-use Bu\DAL\Services\AuditNotificationService;
-use Bu\DAL\Services\CorrectiveActionNotificationService;
-use Bu\DAL\Models\Asset;
-use Bu\DAL\Models\Employee;
-use Bu\DAL\Models\Location;
-use Bu\DAL\Models\Project;
-use Bu\DAL\Models\User;
-use Bu\DAL\Models\AuditPlan;
-use Bu\DAL\Models\AuditAsset;
-use Bu\DAL\Models\AuditAssignment;
-use Bu\DAL\Models\CorrectiveAction;
-use Bu\DAL\Models\CorrectiveActionAssignment;
+use Bu\Server\Database\DatabaseManager;
+use Bu\Server\Database\Repositories\AssetRepository;
+use Bu\Server\Database\Repositories\EmployeeRepository;
+use Bu\Server\Database\Repositories\LocationRepository;
+use Bu\Server\Database\Repositories\ProjectRepository;
+use Bu\Server\Database\Repositories\UserRepository;
+use Bu\Server\Database\Repositories\AuditPlanRepository;
+use Bu\Server\Database\Repositories\AuditAssetRepository;
+use Bu\Server\Database\Repositories\AuditAssignmentRepository;
+use Bu\Server\Database\Repositories\CorrectiveActionRepository;
+use Bu\Server\Database\Repositories\CorrectiveActionAssignmentRepository;
+use Bu\Server\Services\AuditNotificationService;
+use Bu\Server\Services\CorrectiveActionNotificationService;
+use Bu\Server\Models\Asset;
+use Bu\Server\Models\Employee;
+use Bu\Server\Models\Location;
+use Bu\Server\Models\Project;
+use Bu\Server\Models\User;
+use Bu\Server\Models\AuditPlan;
+use Bu\Server\Models\AuditAsset;
+use Bu\Server\Models\AuditAssignment;
+use Bu\Server\Models\CorrectiveAction;
+use Bu\Server\Models\CorrectiveActionAssignment;
 
 class DALServiceProvider extends ServiceProvider
 {
@@ -157,11 +157,11 @@ class DALServiceProvider extends ServiceProvider
         // Register console commands
         if ($this->app->runningInConsole()) {
             $this->commands([
-                \Bu\DAL\Console\Commands\InstallDALPackage::class,
-                \Bu\DAL\Console\Commands\SendAuditReminders::class,
-                \Bu\DAL\Console\Commands\SendCorrectiveActionReminders::class,
-                \Bu\DAL\Console\Commands\TestAuditPlanAccess::class,
-                \Bu\DAL\Console\Commands\TestAuditSystem::class,
+                \Bu\Server\Console\Commands\InstallDALPackage::class,
+                \Bu\Server\Console\Commands\SendAuditReminders::class,
+                \Bu\Server\Console\Commands\SendCorrectiveActionReminders::class,
+                \Bu\Server\Console\Commands\TestAuditPlanAccess::class,
+                \Bu\Server\Console\Commands\TestAuditSystem::class,
             ]);
         }
 
