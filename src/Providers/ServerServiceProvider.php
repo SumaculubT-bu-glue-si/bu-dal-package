@@ -45,9 +45,9 @@ class ServerServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../../config/server.php' => config_path('server.php'),
             __DIR__ . '/../../config/cors.php' => config_path('cors.php'),
-            __DIR__ . '/../../config/app.php' => bootstrap_path('app.php'),
+            __DIR__ . '/../../config/app.php' => base_path('bootstrap/app.php'),
             __DIR__ . '/../../config/lighthouse.php' => config_path('lighthouse.php'),
-            __DIR__ . '/../../routes/api.php' => routes_path('api.php'),
+            __DIR__ . '/../../routes/api.php' => base_path('routes/api.php'),
             __DIR__ . '/../../database/migrations' => database_path('migrations'),
             __DIR__ . '/../../graphql' => base_path('graphql'),
             __DIR__ . '/../../resources/views' => resource_path('views/server'),
