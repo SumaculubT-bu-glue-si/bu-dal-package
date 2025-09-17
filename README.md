@@ -25,12 +25,14 @@ Add this to your `composer.json`:
 ```json
 {
   "minimum-stability": "dev",
+
   "repositories": [
     {
       "type": "vcs",
       "url": "https://github.com/izuminaoki2025/bu-dal-package.git"
     }
   ],
+
   "require": {
     "bu/server": "dev-main"
   }
@@ -40,61 +42,40 @@ Add this to your `composer.json`:
 ### Step 3: Install required packages
 
 ```bash
-composer require bu/server:dev-main
-composer require doctrine/dbal
-composer require nuwave/lighthouse
-composer require laravel/sanctum
+  composer require bu/server:dev-main
+  composer require doctrine/dbal
+  composer require nuwave/lighthouse
+  composer require laravel/sanctum
 ```
 
-### Step 4: Copy Required Files
-
-1. Create required directories:
+### Step 4: Publish Required Files
 
 ```bash
-mkdir graphql
+  php artisan vendor:publish --provider="Bu\Server\Providers\ServerServiceProvider" --force
 ```
 
-2. Copy these files from server-package to your project:
-
-```bash
-# GraphQL Schema
-cp vendor/bu/server/graphql/schema.graphql ./graphql/
-
-# Configuration files
-cp vendor/bu/server/config/lighthouse.php ./config/
-
-# Configure kernel
-cp vendor/bu/server/src/Http/Kernel.php ./app/Http/
-
-# Add routes/api
-cp vendor/bu/server/routes/api.php ./routes/
-
-# Configure route dependency
-cp vendor/bu/server/config/app.php ./bootstrap/
-```
-
-### Step 3: Configure Environment
+### Step 5: Configure Environment
 
 Set up your `.env` file with the required configurations:
 
 ```env
 # Database
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=studio_db
-DB_USERNAME=root
-DB_PASSWORD=
+  DB_CONNECTION=mysql
+  DB_HOST=127.0.0.1
+  DB_PORT=3306
+  DB_DATABASE=studio_db
+  DB_USERNAME=root
+  DB_PASSWORD=
 
-# Mail
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=sumaculub_t@bu.glue-si.com
-MAIL_PASSWORD=trbwodxdampcrecs
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=noreply@gmail.com
-MAIL_FROM_NAME="Asset Management System"
+  # Mail
+  MAIL_MAILER=smtp
+  MAIL_HOST=smtp.gmail.com
+  MAIL_PORT=587
+  MAIL_USERNAME=sumaculub_t@bu.glue-si.com
+  MAIL_PASSWORD=trbwodxdampcrecs
+  MAIL_ENCRYPTION=tls
+  MAIL_FROM_ADDRESS=noreply@gmail.com
+  MAIL_FROM_NAME="Asset Management System"
 ```
 
 ## Configuration
@@ -104,11 +85,11 @@ MAIL_FROM_NAME="Asset Management System"
 1. Create these middleware classes in `app/Http/Middleware/`:
 
 ```bash
-php artisan make:middleware Authenticate
-php artisan make:middleware RedirectIfAuthenticated
-php artisan make:middleware TrimStrings
-php artisan make:middleware TrustProxies
-php artisan make:middleware VerifyCsrfToken
+  php artisan make:middleware Authenticate
+  php artisan make:middleware RedirectIfAuthenticated
+  php artisan make:middleware TrimStrings
+  php artisan make:middleware TrustProxies
+  php artisan make:middleware VerifyCsrfToken
 ```
 
 2. Note: The following middleware classes are provided by Laravel framework, so you don't need to create them:
@@ -122,100 +103,27 @@ php artisan make:middleware VerifyCsrfToken
 - `\Illuminate\Routing\Middleware\ThrottleRequests`
 - `\Illuminate\Auth\Middleware\EnsureEmailIsVerified`
 
-### CORS Configuration
-
-To work with the client application, add the following to your `config/cors.php`:
-
-```php
-<?php
-
-return [
-    'paths' => ['api/*'],
-    'allowed_methods' => ['*'],
-    'allowed_origins' => ['*'],
-    'allowed_origins_patterns' => [],
-    'allowed_headers' => ['*'],
-    'exposed_headers' => [],
-    'max_age' => 0,
-    'supports_credentials' => false,
-];
-
-```
-
-## Route Provider Configuration
-
-1. Create or update `app/Providers/RouteServiceProvider.php`:
-
-```php
-<?php
-
-namespace App\Providers;
-
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Route;
-
-class RouteServiceProvider extends ServiceProvider
-{
-    /**
-     * The path to your application's "home" route.
-     *
-     * Typically, users are redirected here after authentication.
-     *
-     * @var string
-     */
-    public const HOME = '/home';
-
-    /**
-     * Define your route model bindings, pattern filters, and other route configuration.
-     */
-    public function boot(): void
-    {
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->ip());
-        });
-
-        $this->routes(function () {
-            Route::middleware('api')
-                ->prefix('api')
-                ->group(base_path('routes/api.php'));
-
-            Route::middleware('web')
-                ->group(base_path('routes/web.php'));
-        });
-    }
-}
-```
-
-This provider configures:
-
-- Rate limiting for API routes (60 requests per minute per IP)
-- API routes with the 'api' middleware and 'api' prefix
-- Web routes with the 'web' middleware
-
 ## Final Setup Steps
 
 1. Run migrations:
 
 ```bash
-php artisan migrate
+  php artisan migrate
 ```
 
 2. Clear all caches:
 
 ```bash
-php artisan optimize:clear
-php artisan config:clear
-php artisan route:clear
-php artisan cache:clear
+  php artisan optimize:clear
+  php artisan config:clear
+  php artisan route:clear
+  php artisan cache:clear
 ```
 
 3. Start the server:
 
 ```bash
-php artisan serve --host=0.0.0.0
+  php artisan serve --host=0.0.0.0
 ```
 
 ## Usage
