@@ -42,6 +42,17 @@ class ServerServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->publishes([
+            __DIR__ . '/../../config/server.php' => config_path('server.php'),
+            __DIR__ . '/../../config/cors.php' => config_path('cors.php'),
+            __DIR__ . '/../../config/app.php' => config_path('app.php'),
+            __DIR__ . '/../../database/migrations' => database_path('migrations'),
+            __DIR__ . '/../../graphql' => base_path('graphql'),
+            __DIR__ . '/../../resources/views' => resource_path('views/vendor/server'),
+            __DIR__ . '/RouteServiceProvider.php' => app_path('Providers/RouteServiceProvider.php'),
+            __DIR__ . '/../../AppServiceProvider.php' => app_path('Providers/AppServiceProvider.php'),
+        ], 'server-all');
+
         // Publish configuration
         $this->publishes([
             __DIR__ . '/../../config/server.php' => config_path('server.php'),
