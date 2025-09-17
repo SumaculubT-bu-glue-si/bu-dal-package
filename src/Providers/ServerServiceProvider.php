@@ -70,7 +70,7 @@ class ServerServiceProvider extends ServiceProvider
 
         // Publish email views
         $this->publishes([
-            __DIR__ . '/../../resources/views' => resource_path('views/vendor/server'),
+            __DIR__ . '/../../resources/views' => resource_path('views/server'),
         ], 'server-views');
 
         // Register email views
