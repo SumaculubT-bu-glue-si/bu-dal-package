@@ -508,6 +508,9 @@ type AuditPlan {
     "Description of the audit plan."
     description: String
 
+    "Calendar events created for this audit plan."
+    calendar_events: [String!]
+
     "When the audit plan was created."
     created_at: DateTime!
 

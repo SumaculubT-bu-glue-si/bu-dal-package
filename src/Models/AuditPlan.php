@@ -19,11 +19,19 @@ class AuditPlan extends Model
         'status',
         'created_by',
         'description',
+        'calendar_events',
+        'chat_space_id',
+        'chat_space_name',
+        'chat_space_created_at',
+        'chat_space_cleanup_scheduled'
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'due_date' => 'date',
+        'calendar_events' => 'array',
+        'chat_space_created_at' => 'datetime',
+        'chat_space_cleanup_scheduled' => 'boolean'
     ];
 
     /**
@@ -115,7 +123,7 @@ class AuditPlan extends Model
         $totalAssets = $this->auditAssets()->count();
         $auditedAssets = $this->auditAssets()->where('audit_status', true)->count();
         $resolvedAssets = $this->auditAssets()->where('resolved', true)->count();
-        
+
         $totalActions = $this->correctiveActions()->count();
         $completedActions = $this->correctiveActions()->where('status', 'completed')->count();
         $pendingActions = $totalActions - $completedActions;

@@ -7,6 +7,7 @@ use Bu\Server\Models\AuditAssignment;
 use Bu\Server\Models\AuditAsset;
 use Bu\Server\Models\Asset;
 use Bu\Server\Models\AuditLog;
+use Bu\Gws\Jobs\CreateAuditNotifications;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -19,43 +20,45 @@ class CreateAuditPlan
         try {
             // Enhanced validation with detailed error messages
             $validationErrors = [];
-            
+
             // Check for required fields
             if (empty($args['name']) || trim($args['name']) === '') {
                 $validationErrors[] = 'Audit plan name is required and cannot be empty';
             }
-            
+
             if (empty($args['start_date'])) {
                 $validationErrors[] = 'Start date is required';
             } elseif (!strtotime($args['start_date'])) {
                 $validationErrors[] = 'Start date must be a valid date format (YYYY-MM-DD)';
             }
-            
+
             if (empty($args['due_date'])) {
                 $validationErrors[] = 'Due date is required';
             } elseif (!strtotime($args['due_date'])) {
                 $validationErrors[] = 'Due date must be a valid date format (YYYY-MM-DD)';
             }
-            
+
             // Check if due date is after start date
-            if (!empty($args['start_date']) && !empty($args['due_date']) && 
-                strtotime($args['due_date']) <= strtotime($args['start_date'])) {
+            if (
+                !empty($args['start_date']) && !empty($args['due_date']) &&
+                strtotime($args['due_date']) <= strtotime($args['start_date'])
+            ) {
                 $validationErrors[] = 'Due date must be after the start date';
             }
-            
+
             if (empty($args['locations']) || !is_array($args['locations']) || count($args['locations']) === 0) {
                 $validationErrors[] = 'At least one location is required';
             }
-            
+
             if (empty($args['auditors']) || !is_array($args['auditors']) || count($args['auditors']) === 0) {
                 $validationErrors[] = 'At least one auditor is required';
             }
-            
+
             // If there are validation errors, throw them all at once
             if (!empty($validationErrors)) {
                 throw new \Exception('Validation failed: ' . implode('; ', $validationErrors));
             }
-            
+
             // Validate that locations exist
             $locationIds = $args['locations'];
             $existingLocations = \Bu\Server\Models\Location::whereIn('id', $locationIds)->pluck('id')->toArray();
@@ -63,7 +66,7 @@ class CreateAuditPlan
             if (!empty($missingLocations)) {
                 throw new \Exception('Invalid location IDs: ' . implode(', ', $missingLocations));
             }
-            
+
             // Validate that auditors exist
             $auditorIds = $args['auditors'];
             $existingAuditors = \Bu\Server\Models\Employee::whereIn('id', $auditorIds)->pluck('id')->toArray();
@@ -217,6 +220,23 @@ class CreateAuditPlan
                     ['name' => $auditPlan->name, 'locations' => $locationNames->toArray()],
                     "Audit plan '{$auditPlan->name}' created with " . count($assets) . " assets"
                 );
+
+                // Dispatch comprehensive Google Workspace integration job
+                try {
+                    \Bu\Gws\Jobs\CreateAuditNotifications::dispatch($auditPlan, $locationNames[0] ?? 'Unknown Location');
+
+                    Log::info('Google Workspace integration job dispatched', [
+                        'audit_plan_id' => $auditPlan->id,
+                        'location' => $locationNames[0] ?? 'Unknown Location',
+                        'service' => 'CreateAuditNotifications'
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch Google Workspace integration job', [
+                        'audit_plan_id' => $auditPlan->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue with audit plan creation even if Google integration fails
+                }
 
                 return $auditPlan->load(['assignments.location', 'assignments.auditor', 'auditAssets.asset']);
             });
