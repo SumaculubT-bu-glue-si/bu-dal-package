@@ -22,16 +22,6 @@ class AssetMutations
             Arr::except($input, ['asset_id'])
         );
 
-        // Create audit log
-        AuditLog::create([
-            'asset_id' => $asset->id,
-            'audit_plan_id' => null,  // explicitly set to null since it's a direct asset operation
-            'action' => $existingAsset ? 'updated' : 'created',
-            'old_values' => $oldValues,
-            'new_values' => $asset->toArray(),
-            'performed_by' => 'system',  // temporarily hardcoded until auth is implemented
-        ]);
-
         return $asset;
     }
 
@@ -51,16 +41,6 @@ class AssetMutations
                 ['asset_id' => $input['asset_id']],
                 Arr::except($input, ['asset_id'])
             );
-
-            // Create audit log
-            AuditLog::create([
-                'asset_id' => $asset->id,
-                'audit_plan_id' => null,  // explicitly set to null since it's a direct asset operation
-                'action' => $existingAsset ? 'updated' : 'created',
-                'old_values' => $oldValues,
-                'new_values' => $asset->toArray(),
-                'performed_by' => 'system',  // temporarily hardcoded until auth is implemented
-            ]);
 
             $assetIds[] = $input['asset_id'];
         }

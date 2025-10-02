@@ -66,7 +66,9 @@ class AuditController extends ApiController
                 'token' => $token,
                 'expires_at' => $expiresAt,
                 'employee' => $employee,
-                'audit_plan' => $auditPlan
+                'audit_plan' => $auditPlan,
+                'email_sent' => $emailSent,
+                'accessUrl' => $emailSent ? null : url("/employee-audits/access/{$token}")
             ], 'Access request processed successfully');
         } catch (\Exception $e) {
             Log::error("Error in requestAccess: " . $e->getMessage());
@@ -98,6 +100,14 @@ class AuditController extends ApiController
                 return $this->errorResponse('Employee or audit plan not found.', 404);
             }
 
+            // Check if employee is assigned as an auditor for this audit plan
+            $auditAssignment = AuditAssignment::where('audit_plan_id', $auditPlan->id)
+                ->where('auditor_id', $employee->id)
+                ->first();
+
+            $isAuditor = $auditAssignment !== null;
+            $assignedLocation = $auditAssignment ? $auditAssignment->location->name : null;
+
             // Get audit assets for this plan with eager loading of asset relationship
             $auditAssets = AuditAsset::where('audit_plan_id', $auditPlan->id)
                 ->with(['asset'])
@@ -108,13 +118,13 @@ class AuditController extends ApiController
                         'id' => $auditAsset->id,
                         'asset_id' => $asset ? $asset->asset_id : $auditAsset->asset_id,
                         'asset_type' => $asset ? $asset->type : 'Unknown',
-                        'model' => $asset ? $asset->model : 'Unknown Model',
+                        'model' => $asset ? $asset->model : 'Unknown',
                         'manufacturer' => $asset ? $asset->manufacturer : 'Unknown',
-                        'hostname' => $asset ? $asset->hostname : null,
-                        'original_user' => $auditAsset->original_user,
+                        'hostname' => $asset ? $asset->hostname : 'Unknown',
                         'original_location' => $auditAsset->original_location,
-                        'current_user' => $auditAsset->current_user,
+                        'original_user' => $auditAsset->original_user,
                         'current_location' => $auditAsset->current_location,
+                        'current_user' => $auditAsset->current_user,
                         'status' => $auditAsset->current_status,
                         'notes' => $auditAsset->auditor_notes,
                         'audited_at' => $auditAsset->audited_at,
@@ -135,7 +145,15 @@ class AuditController extends ApiController
                 'employee' => $employee,
                 'audit_plan' => $auditPlan,
                 'expires_at' => $tokenData['expires_at'],
-                'audit_assets' => $auditAssets
+                'audit_assets' => $auditAssets,
+                'role' => [
+                    'isAuditor' => $isAuditor,
+                    'assignedLocation' => $assignedLocation,
+                    'canAuditAllAssets' => $isAuditor,
+                    'description' => $isAuditor
+                        ? "You are auditing all assets in location: {$assignedLocation}. You can see and update all assets in this location."
+                        : "You have assets assigned to you in this audit plan. You can see and update your own assigned assets."
+                ]
             ], 'Access token validated successfully');
         } catch (\Exception $e) {
             Log::error("Error in validateAccessToken: " . $e->getMessage());
