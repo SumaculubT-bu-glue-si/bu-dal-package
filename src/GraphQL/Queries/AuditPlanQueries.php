@@ -39,4 +39,14 @@ class AuditPlanQueries
 
         return $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
     }
+
+    /**
+     * Resolve calendar_events field for AuditPlan
+     */
+    public function calendarEvents($rootValue, array $args)
+    {
+        // The calendar_events field is stored as JSON in the database
+        // and is automatically cast to array by the model
+        return $rootValue->calendar_events ?? [];
+    }
 }
