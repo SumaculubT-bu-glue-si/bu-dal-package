@@ -1,9 +1,9 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Queries;
+namespace Bu\Server\GraphQL\Queries;
 
-use Bu\DAL\Models\CorrectiveAction;
-use Bu\DAL\Database\Repositories\CorrectiveActionRepository;
+use Bu\Server\Models\CorrectiveAction;
+use Bu\Server\Database\Repositories\CorrectiveActionRepository;
 
 class CorrectiveActionQueries
 {

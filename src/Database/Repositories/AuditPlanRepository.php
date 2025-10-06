@@ -1,8 +1,8 @@
 <?php
 
-namespace Bu\DAL\Database\Repositories;
+namespace Bu\Server\Database\Repositories;
 
-use Bu\DAL\Models\AuditPlan;
+use Bu\Server\Models\AuditPlan;
 use Illuminate\Database\Eloquent\Collection;
 
 class AuditPlanRepository extends BaseRepository

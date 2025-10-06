@@ -1,6 +1,6 @@
 <?php
 
-namespace Bu\DAL\Database\Repositories;
+namespace Bu\Server\Database\Repositories;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Collection;

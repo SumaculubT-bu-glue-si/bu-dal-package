@@ -1,8 +1,8 @@
 <?php
 
-namespace Bu\DAL\Database\Repositories;
+namespace Bu\Server\Database\Repositories;
 
-use Bu\DAL\Models\Asset;
+use Bu\Server\Models\Asset;
 use Illuminate\Database\Eloquent\Collection;
 
 class AssetRepository extends BaseRepository

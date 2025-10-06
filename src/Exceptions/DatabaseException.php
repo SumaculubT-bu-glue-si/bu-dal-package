@@ -1,6 +1,6 @@
 <?php
 
-namespace Bu\DAL\Exceptions;
+namespace Bu\Server\Exceptions;
 
 use Exception;
 

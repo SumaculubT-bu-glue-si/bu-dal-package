@@ -1,9 +1,9 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Queries;
+namespace Bu\Server\GraphQL\Queries;
 
-use Bu\DAL\Models\AuditPlan;
-use Bu\DAL\Database\Repositories\AuditPlanRepository;
+use Bu\Server\Models\AuditPlan;
+use Bu\Server\Database\Repositories\AuditPlanRepository;
 
 class AuditPlanQueries
 {

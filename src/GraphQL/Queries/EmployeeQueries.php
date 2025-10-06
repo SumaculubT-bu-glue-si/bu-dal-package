@@ -1,9 +1,9 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Queries;
+namespace Bu\Server\GraphQL\Queries;
 
-use Bu\DAL\Models\Employee;
-use Bu\DAL\Database\Repositories\EmployeeRepository;
+use Bu\Server\Models\Employee;
+use Bu\Server\Database\Repositories\EmployeeRepository;
 
 class EmployeeQueries
 {
@@ -43,7 +43,7 @@ class EmployeeQueries
     public function employee($rootValue, array $args)
     {
         $id = $args['id'];
-        
+
         return Employee::find($id);
     }
 
@@ -53,7 +53,7 @@ class EmployeeQueries
     public function orgUnits($rootValue, array $args)
     {
         $orgUnits = Employee::getAvailableOrgUnits();
-        
+
         $result = [];
         foreach ($orgUnits as $path => $name) {
             $result[] = [
@@ -61,7 +61,7 @@ class EmployeeQueries
                 'name' => $name,
             ];
         }
-        
+
         return $result;
     }
 }

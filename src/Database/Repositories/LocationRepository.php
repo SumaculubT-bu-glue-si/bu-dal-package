@@ -1,8 +1,8 @@
 <?php
 
-namespace Bu\DAL\Database\Repositories;
+namespace Bu\Server\Database\Repositories;
 
-use Bu\DAL\Models\Location;
+use Bu\Server\Models\Location;
 use Illuminate\Database\Eloquent\Collection;
 
 class LocationRepository extends BaseRepository

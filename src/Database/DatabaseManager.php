@@ -1,12 +1,12 @@
 <?php
 
-namespace Bu\DAL\Database;
+namespace Bu\Server\Database;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Database\Connection;
-use Bu\DAL\Exceptions\DatabaseException;
-use Bu\DAL\Exceptions\TransactionException;
+use Bu\Server\Exceptions\DatabaseException;
+use Bu\Server\Exceptions\TransactionException;
 
 class DatabaseManager
 {

@@ -1,9 +1,9 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Queries;
+namespace Bu\Server\GraphQL\Queries;
 
-use Bu\DAL\Models\AuditAssignment;
-use Bu\DAL\Database\Repositories\AuditAssignmentRepository;
+use Bu\Server\Models\AuditAssignment;
+use Bu\Server\Database\Repositories\AuditAssignmentRepository;
 
 class AuditAssignmentQueries
 {

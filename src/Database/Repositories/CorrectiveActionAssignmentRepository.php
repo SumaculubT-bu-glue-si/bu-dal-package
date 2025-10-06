@@ -1,8 +1,8 @@
 <?php
 
-namespace Bu\DAL\Database\Repositories;
+namespace Bu\Server\Database\Repositories;
 
-use Bu\DAL\Models\CorrectiveActionAssignment;
+use Bu\Server\Models\CorrectiveActionAssignment;
 use Illuminate\Database\Eloquent\Collection;
 
 class CorrectiveActionAssignmentRepository extends BaseRepository

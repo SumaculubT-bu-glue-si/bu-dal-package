@@ -1,9 +1,9 @@
 <?php
 
-namespace Bu\DAL\GraphQL\Queries;
+namespace Bu\Server\GraphQL\Queries;
 
-use Bu\DAL\Models\AuditAsset;
-use Bu\DAL\Database\Repositories\AuditAssetRepository;
+use Bu\Server\Models\AuditAsset;
+use Bu\Server\Database\Repositories\AuditAssetRepository;
 
 class AuditAssetQueries
 {

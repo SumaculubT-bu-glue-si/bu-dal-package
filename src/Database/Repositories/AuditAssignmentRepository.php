@@ -1,8 +1,8 @@
 <?php
 
-namespace Bu\DAL\Database\Repositories;
+namespace Bu\Server\Database\Repositories;
 
-use Bu\DAL\Models\AuditAssignment;
+use Bu\Server\Models\AuditAssignment;
 use Illuminate\Database\Eloquent\Collection;
 
 class AuditAssignmentRepository extends BaseRepository
