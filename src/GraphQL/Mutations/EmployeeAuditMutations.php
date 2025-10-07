@@ -148,7 +148,8 @@ class EmployeeAuditMutations
             ], $expiresAt);
 
             // Send email with temporary access link
-            $accessUrl = 'http://localhost:9002' . "/employee-audits/access/{$accessToken}";
+            $frontendUrl = config('server.frontend_url', env('FRONTEND_URL', 'http://localhost:9002'));
+            $accessUrl = $frontendUrl . "/employee-audits/access/{$accessToken}";
 
             // Send email to employee with access link
             try {

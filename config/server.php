@@ -128,7 +128,14 @@ return [
         'disk' => env('SERVER_STORAGE_DISK', 'local'),
         'path' => env('SERVER_STORAGE_PATH', 'server'),
         'allowed_types' => [
-            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg'
+            'pdf',
+            'doc',
+            'docx',
+            'xls',
+            'xlsx',
+            'png',
+            'jpg',
+            'jpeg'
         ],
         'max_size' => env('SERVER_MAX_UPLOAD_SIZE', 10240), // 10MB
     ],
@@ -147,6 +154,16 @@ return [
         'ttl' => env('SERVER_CACHE_TTL', 3600), // 1 hour
         'store' => env('SERVER_CACHE_STORE', 'redis'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Frontend Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure frontend application URL for email links and redirects.
+    |
+    */
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:9002'),
 
     /*
     |--------------------------------------------------------------------------

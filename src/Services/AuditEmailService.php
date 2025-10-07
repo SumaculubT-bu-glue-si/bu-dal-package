@@ -16,7 +16,7 @@ class AuditEmailService
     public function sendAccessEmail(Employee $employee, AuditPlan $auditPlan, string $token, $expiresAt): bool
     {
         try {
-            $frontendUrl = config('server.frontend_url', 'http://localhost:9002');
+            $frontendUrl = config('server.frontend_url', env('FRONTEND_URL', 'http://localhost:9002'));
             $accessUrl = "{$frontendUrl}/employee-audits/access/{$token}";
 
             Mail::to($employee)->send(new AuditAccessEmail($accessUrl, $expiresAt, $employee->name));
