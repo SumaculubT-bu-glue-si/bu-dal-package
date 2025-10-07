@@ -4,6 +4,7 @@ namespace Bu\Server\GraphQL\Queries;
 
 use Bu\Server\Models\AuditPlan;
 use Bu\Server\Database\Repositories\AuditPlanRepository;
+use Illuminate\Support\Facades\Log;
 
 class AuditPlanQueries
 {
@@ -47,6 +48,11 @@ class AuditPlanQueries
     {
         // The calendar_events field is stored as JSON in the database
         // and is automatically cast to array by the model
+        Log::info('CalendarEvents resolver called', [
+            'audit_plan_id' => $rootValue->id ?? 'unknown',
+            'calendar_events' => $rootValue->calendar_events ?? 'null'
+        ]);
+
         return $rootValue->calendar_events ?? [];
     }
 }
