@@ -13,8 +13,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// GraphQL endpoint - Single API entry point with custom CORS
-Route::post('/graphql', \Nuwave\Lighthouse\Http\GraphQLController::class)->middleware(\Bu\Server\Http\Middleware\GraphQLCors::class);
+// GraphQL endpoint - Single API entry point with advanced rate limiting and custom CORS
+Route::post('/graphql', \Nuwave\Lighthouse\Http\GraphQLController::class)
+    ->middleware([
+        \Bu\Server\Http\Middleware\GraphQLRateLimit::class,
+        \Bu\Server\Http\Middleware\GraphQLCors::class,
+        \Bu\Server\Http\Middleware\GraphQLJWTAuth::class
+    ]);
 
 // Optional: GraphQL playground for development (if you want to test queries)
 Route::get('/graphql-playground', function () {

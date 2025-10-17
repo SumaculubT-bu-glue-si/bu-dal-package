@@ -13,7 +13,7 @@ class LocationMutations
     public function create($rootValue, array $args)
     {
         $input = $args['location'];
-        
+
         $validator = Validator::make($input, [
             'name' => 'required|string|max:255|unique:locations,name',
             'address' => 'nullable|string|max:500',
@@ -34,7 +34,7 @@ class LocationMutations
         }
 
         $location = Location::create($input);
-        
+
         return $location;
     }
 
@@ -45,9 +45,9 @@ class LocationMutations
     {
         $id = $args['id'];
         $input = $args['location'];
-        
+
         $location = Location::find($id);
-        
+
         if (!$location) {
             throw new \Exception('Location not found');
         }
@@ -72,7 +72,7 @@ class LocationMutations
         }
 
         $location->update($input);
-        
+
         return $location;
     }
 
@@ -82,9 +82,9 @@ class LocationMutations
     public function delete($rootValue, array $args)
     {
         $id = $args['id'];
-        
+
         $location = Location::find($id);
-        
+
         if (!$location) {
             throw new \Exception('Location not found');
         }
@@ -95,7 +95,7 @@ class LocationMutations
         }
 
         $location->delete();
-        
+
         return true;
     }
 
@@ -105,7 +105,7 @@ class LocationMutations
     public function upsertLocation($rootValue, array $args)
     {
         $input = $args['location'];
-        
+
         if (isset($input['id'])) {
             return $this->update($rootValue, ['id' => $input['id'], 'location' => $input]);
         } else {
