@@ -118,19 +118,6 @@ class ServerServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Load package API routes
-        $this->loadRoutesFrom(__DIR__ . '/../Routes/api.php');
-
-        // Register email views
-        $this->loadViewsFrom(__DIR__ . '/../../resources/views', 'server');
-
-        // Load package migrations
-        $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
-
-        // Register GraphQL schema if enabled
-        if (Config::get('dal.graphql.enabled', true)) {
-            $this->registerGraphQLSchema();
-        }
 
         // Publish all resources
         if ($this->app->runningInConsole()) {
