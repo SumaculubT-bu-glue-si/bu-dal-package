@@ -3,6 +3,9 @@
 namespace Bu\Server\GraphQL\Mutations;
 
 use Bu\Server\Models\Employee;
+use Bu\Server\Models\ServiceSubscription;
+use Bu\Server\Models\License;
+use Illuminate\Support\Facades\DB;
 use GraphQL\Type\Definition\ResolveInfo;
 use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
 
@@ -120,5 +123,149 @@ class EmployeeMutations
         }
 
         return $result;
+    }
+
+    /**
+     * Assign an employee either to a license or a service subscription,
+     * depending on the subscription's license_type.
+     */
+    public function assignEmployee($root, array $args, GraphQLContext $context)
+    {
+        $subscriptionId = $args['subscription_id'] ?? null;
+        $employeeId = $args['employee_id'] ?? null;
+        $licenseId = $args['license_id'] ?? null;
+
+        if (!$subscriptionId || !$employeeId) {
+            return [
+                'success' => false,
+                'message' => 'Missing subscription_id or employee_id.'
+            ];
+        }
+
+        try {
+            return DB::transaction(function () use ($subscriptionId, $employeeId, $licenseId) {
+                $subscription = ServiceSubscription::findOrFail($subscriptionId);
+                $employee = Employee::where('employee_id', $employeeId)->firstOrFail();
+
+                if ($subscription->pricing_type === 'per-license') {
+                    if (!$licenseId) {
+                        throw new \Exception('License ID is required for per-license subscriptions.');
+                    }
+
+                    $license = License::where('service_subscription_id', $subscriptionId)
+                        ->where('id', $licenseId)
+                        ->firstOrFail();
+
+                    // licenses.assigned_employee_id references employees.id (numeric FK)
+                    $license->assigned_employee_id = $employee->employee_id;
+                    $license->used = true;
+                    $license->save();
+
+                    return [
+                        'success' => true,
+                        'message' => "Employee {$employee->name} assigned to license {$license->id}."
+                    ];
+                } else {
+                    // For per-seat subscriptions, connect the employee directly to the subscription.
+                    // The pivot column stores employees.employee_id, not employees.id.
+                    $subscription->employees()->syncWithoutDetaching([$employee->employee_id]);
+
+                    return [
+                        'success' => true,
+                        'message' => "Employee {$employee->name} assigned to subscription {$subscription->id}."
+                    ];
+                }
+            });
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Unassign an employee from a per-seat service subscription.
+     */
+    public function unassignEmployee($root, array $args, GraphQLContext $context)
+    {
+        $subscriptionId = $args['subscription_id'] ?? null;
+        $employeeId = $args['employee_id'] ?? null;
+
+        if (!$subscriptionId || !$employeeId) {
+            return [
+                'success' => false,
+                'message' => 'Missing subscription_id or employee_id.'
+            ];
+        }
+
+        try {
+            return DB::transaction(function () use ($subscriptionId, $employeeId) {
+                $subscription = ServiceSubscription::findOrFail($subscriptionId);
+                $employee = Employee::where('employee_id', $employeeId)->firstOrFail();
+
+                if ($subscription->pricing_type !== 'per-seat') {
+                    return [
+                        'success' => false,
+                        'message' => 'Unassign is only applicable to per-seat subscriptions.'
+                    ];
+                }
+
+                $subscription->employees()->detach($employee->employee_id);
+
+                return [
+                    'success' => true,
+                    'message' => "Employee {$employee->name} unassigned from subscription {$subscription->id}."
+                ];
+            });
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Update pivot created_at (assigned date) for per-seat subscription assignment
+     */
+    public function updatePerSeatAssignedDate($root, array $args)
+    {
+        $subscriptionId = $args['subscription_id'] ?? null;
+        $employeeId = $args['employee_id'] ?? null;
+        $assignedDate = $args['assigned_date'] ?? null;
+
+        if (!$subscriptionId || !$employeeId || !$assignedDate) {
+            return ['success' => false, 'message' => 'Missing required fields.'];
+        }
+
+        try {
+            return DB::transaction(function () use ($subscriptionId, $employeeId, $assignedDate) {
+                $subscription = ServiceSubscription::findOrFail($subscriptionId);
+
+                if ($subscription->pricing_type !== 'per-seat') {
+                    return ['success' => false, 'message' => 'Only per-seat subscriptions supported.'];
+                }
+
+                // Ensure relation exists
+                $existing = $subscription->employees()
+                    ->where('employees.employee_id', $employeeId)
+                    ->exists();
+
+                if (!$existing) {
+                    return ['success' => false, 'message' => 'Employee not assigned to this subscription.'];
+                }
+
+                // Update pivot created_at to assigned_date
+                $subscription->employees()->updateExistingPivot($employeeId, [
+                    'created_at' => $assignedDate,
+                    'updated_at' => now(),
+                ]);
+
+                return ['success' => true, 'message' => 'Assigned date updated.'];
+            });
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
     }
 }
