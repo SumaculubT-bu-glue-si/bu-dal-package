@@ -48,6 +48,18 @@ class EmployeeQueries
     }
 
     /**
+     * Search employees by name
+     */
+    public function search($rootValue, array $args)
+    {
+        $name = $args['name'];
+
+        return Employee::where('name', 'like', '%' . $name . '%')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
      * Get available organizational units
      */
     public function orgUnits($rootValue, array $args)
