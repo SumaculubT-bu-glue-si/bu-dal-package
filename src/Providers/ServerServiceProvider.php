@@ -130,7 +130,6 @@ class ServerServiceProvider extends ServiceProvider
         // Register console commands
         if ($this->app->runningInConsole()) {
             $this->commands([
-                \Bu\Server\Console\Commands\InstallDALPackage::class,
                 \Bu\Server\Console\Commands\SendAuditReminders::class,
                 \Bu\Server\Console\Commands\SendCorrectiveActionReminders::class,
                 \Bu\Server\Console\Commands\TestAuditPlanAccess::class,
