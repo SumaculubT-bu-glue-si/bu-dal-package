@@ -20,6 +20,7 @@ use Bu\Server\Services\CorrectiveActionNotificationService;
 use Bu\Server\Services\AuditAccessService;
 use Bu\Server\Providers\MailServiceProvider;
 use Bu\Server\Models\Asset;
+use Bu\Server\Models\ServiceSubscription;
 use Bu\Server\Models\Employee;
 use Bu\Server\Models\Location;
 use Bu\Server\Models\Project;
