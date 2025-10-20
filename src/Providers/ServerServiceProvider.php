@@ -127,16 +127,6 @@ class ServerServiceProvider extends ServiceProvider
         // Load package migrations
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
 
-        // Register console commands
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                \Bu\Server\Console\Commands\SendAuditReminders::class,
-                \Bu\Server\Console\Commands\SendCorrectiveActionReminders::class,
-                \Bu\Server\Console\Commands\TestAuditPlanAccess::class,
-                \Bu\Server\Console\Commands\TestAuditSystem::class,
-            ]);
-        }
-
         // Register GraphQL schema if enabled
         if (Config::get('dal.graphql.enabled', true)) {
             $this->registerGraphQLSchema();
