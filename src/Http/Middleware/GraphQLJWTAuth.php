@@ -53,11 +53,17 @@ class GraphQLJWTAuth
                 if ($user) {
                     // Set the authenticated user for the API guard
                     Auth::guard('api')->setUser($user);
+                } else {
+                    // Token is invalid or user not found
+                    throw new \Tymon\JWTAuth\Exceptions\JWTException('User not found');
                 }
+            } else {
+                // No token provided - this will be handled by @guard directive
+                // Don't throw error here, let Lighthouse handle it
             }
         } catch (JWTException $e) {
-            // Token is invalid, but we don't throw an error here
-            // Let individual resolvers handle authentication
+            // Token is invalid - this will be handled by @guard directive
+            // Don't throw error here, let Lighthouse handle it
         }
 
         return $next($request);
