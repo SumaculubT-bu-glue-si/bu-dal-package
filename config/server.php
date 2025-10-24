@@ -23,7 +23,7 @@ return [
         'providers' => [
             'users' => [
                 'driver' => 'eloquent',
-                'model' => \Bu\Server\Models\User::class,
+                'model' => \App\Models\User::class,
             ],
         ],
     ],

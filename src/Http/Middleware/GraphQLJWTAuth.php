@@ -27,9 +27,9 @@ class GraphQLJWTAuth
         if ($isInternalCommand) {
             // For internal commands, set a system user
             // Find or create a system user for internal operations
-            $systemUser = \Bu\Server\Models\User::where('email', 'admin@example.com')->first();
+            $systemUser = \App\Models\User::where('email', 'admin@example.com')->first();
             if (!$systemUser) {
-                $systemUser = \Bu\Server\Models\User::create([
+                $systemUser = \App\Models\User::create([
                     'name' => 'Admin User',
                     'email' => 'admin@example.com',
                     'password' => bcrypt('password'),

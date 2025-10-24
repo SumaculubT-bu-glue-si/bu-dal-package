@@ -3,7 +3,6 @@
 namespace Bu\Server\GraphQL\Mutations;
 
 use Bu\Server\Models\ActivityLog;
-use Bu\Server\Models\User;
 use Illuminate\Support\Facades\Auth;
 use GraphQL\Error\Error;
 

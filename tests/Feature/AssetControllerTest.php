@@ -18,9 +18,9 @@ class AssetControllerTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        
+
         // Create test user and authenticate
-        $this->user = \Bu\Server\Models\User::factory()->create();
+        $this->user = \App\Models\User::factory()->create();
         $this->actingAs($this->user);
     }
 
@@ -32,26 +32,26 @@ class AssetControllerTest extends TestCase
         $response = $this->getJson('/api/assets');
 
         $response->assertOk()
-                ->assertJsonCount(5, 'data')
-                ->assertJsonStructure([
-                    'data' => [
-                        '*' => [
-                            'id',
-                            'asset_id',
-                            'type',
-                            'manufacturer',
-                            'model',
-                            'status'
-                        ]
+            ->assertJsonCount(5, 'data')
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'asset_id',
+                        'type',
+                        'manufacturer',
+                        'model',
+                        'status'
                     ]
-                ]);
+                ]
+            ]);
     }
 
     /** @test */
     public function it_can_create_an_asset()
     {
         $location = Location::factory()->create();
-        
+
         $assetData = [
             'asset_id' => 'AST-' . $this->faker->unique()->numberBetween(1000, 9999),
             'type' => 'pc',
@@ -65,13 +65,13 @@ class AssetControllerTest extends TestCase
         $response = $this->postJson('/api/assets', $assetData);
 
         $response->assertCreated()
-                ->assertJson([
-                    'data' => [
-                        'asset_id' => $assetData['asset_id'],
-                        'type' => $assetData['type'],
-                        'manufacturer' => $assetData['manufacturer']
-                    ]
-                ]);
+            ->assertJson([
+                'data' => [
+                    'asset_id' => $assetData['asset_id'],
+                    'type' => $assetData['type'],
+                    'manufacturer' => $assetData['manufacturer']
+                ]
+            ]);
     }
 
     /** @test */
@@ -80,7 +80,7 @@ class AssetControllerTest extends TestCase
         $response = $this->postJson('/api/assets', []);
 
         $response->assertStatus(422)
-                ->assertJsonValidationErrors(['asset_id', 'type', 'manufacturer', 'model', 'serial_number', 'location_id']);
+            ->assertJsonValidationErrors(['asset_id', 'type', 'manufacturer', 'model', 'serial_number', 'location_id']);
     }
 
     /** @test */
@@ -92,12 +92,12 @@ class AssetControllerTest extends TestCase
         $response = $this->putJson("/api/assets/{$asset->id}", array_merge($asset->toArray(), $newData));
 
         $response->assertOk()
-                ->assertJson([
-                    'data' => [
-                        'manufacturer' => 'HP',
-                        'model' => 'EliteBook'
-                    ]
-                ]);
+            ->assertJson([
+                'data' => [
+                    'manufacturer' => 'HP',
+                    'model' => 'EliteBook'
+                ]
+            ]);
     }
 
     /** @test */
@@ -120,6 +120,6 @@ class AssetControllerTest extends TestCase
         $response = $this->getJson('/api/assets/type/pc');
 
         $response->assertOk()
-                ->assertJsonCount(3, 'data');
+            ->assertJsonCount(3, 'data');
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Bu\Server\Database\Repositories;
 
-use Bu\Server\Models\User;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
 class UserRepository extends BaseRepository

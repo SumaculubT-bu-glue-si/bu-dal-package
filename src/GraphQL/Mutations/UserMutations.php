@@ -2,7 +2,7 @@
 
 namespace Bu\Server\GraphQL\Mutations;
 
-use Bu\Server\Models\User;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +14,7 @@ class UserMutations
     public function create($rootValue, array $args)
     {
         $userData = $args['user'];
-        
+
         // Validate input
         $validated = validator($userData, [
             'name' => 'required|string|max:255',
@@ -39,9 +39,9 @@ class UserMutations
     {
         $id = $args['id'];
         $userData = $args['user'];
-        
+
         $user = User::findOrFail($id);
-        
+
         // Validate input
         $validated = validator($userData, [
             'name' => 'sometimes|required|string|max:255',
@@ -58,17 +58,17 @@ class UserMutations
         if (isset($validated['name'])) {
             $user->name = $validated['name'];
         }
-        
+
         if (isset($validated['email'])) {
             $user->email = $validated['email'];
         }
-        
+
         if (isset($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
 
         $user->save();
-        
+
         return $user;
     }
 
@@ -78,14 +78,14 @@ class UserMutations
     public function delete($rootValue, array $args)
     {
         $id = $args['id'];
-        
+
         $user = User::findOrFail($id);
-        
+
         // You might want to add additional checks here
         // For example, prevent deletion of the last admin user
-        
+
         $user->delete();
-        
+
         return true;
     }
 }

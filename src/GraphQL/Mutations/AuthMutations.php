@@ -2,7 +2,7 @@
 
 namespace Bu\Server\GraphQL\Mutations;
 
-use Bu\Server\Models\User;
+use App\Models\User;
 use Bu\Server\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;

@@ -92,7 +92,7 @@ class AuditPlanMutations
             $userId = Auth::id();
             if (!$userId) {
                 // For testing purposes, get the first user or create one
-                $user = \Bu\DAL\Models\User::first();
+                $user = \App\Models\User::first();
                 if (!$user) {
                     throw new \Exception('No users found in the system. Please run the database seeder first.');
                 }

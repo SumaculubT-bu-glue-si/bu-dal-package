@@ -3,7 +3,6 @@
 namespace Bu\Server\GraphQL\Mutations;
 
 use Bu\Server\Models\Asset;
-use Bu\Server\Models\AuditLog;
 use Illuminate\Support\Arr;
 
 class AssetMutations

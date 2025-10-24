@@ -20,10 +20,10 @@ class ProjectControllerTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        
-        $this->user = \Bu\Server\Models\User::factory()->create();
+
+        $this->user = \App\Models\User::factory()->create();
         $this->actingAs($this->user);
-        
+
         $this->location = Location::factory()->create();
         $this->manager = Employee::factory()->create([
             'location_id' => $this->location->id
@@ -42,18 +42,18 @@ class ProjectControllerTest extends TestCase
         $response = $this->getJson('/api/projects');
 
         $response->assertOk()
-                ->assertJsonCount(5, 'data')
-                ->assertJsonStructure([
-                    'data' => [
-                        '*' => [
-                            'id',
-                            'name',
-                            'code',
-                            'status',
-                            'priority'
-                        ]
+            ->assertJsonCount(5, 'data')
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'name',
+                        'code',
+                        'status',
+                        'priority'
                     ]
-                ]);
+                ]
+            ]);
     }
 
     /** @test */
@@ -74,13 +74,13 @@ class ProjectControllerTest extends TestCase
         $response = $this->postJson('/api/projects', $projectData);
 
         $response->assertCreated()
-                ->assertJson([
-                    'data' => [
-                        'name' => $projectData['name'],
-                        'code' => $projectData['code'],
-                        'status' => $projectData['status']
-                    ]
-                ]);
+            ->assertJson([
+                'data' => [
+                    'name' => $projectData['name'],
+                    'code' => $projectData['code'],
+                    'status' => $projectData['status']
+                ]
+            ]);
     }
 
     /** @test */
@@ -89,11 +89,17 @@ class ProjectControllerTest extends TestCase
         $response = $this->postJson('/api/projects', []);
 
         $response->assertStatus(422)
-                ->assertJsonValidationErrors([
-                    'name', 'code', 'description', 
-                    'start_date', 'end_date', 'status',
-                    'priority', 'manager_id', 'location_ids'
-                ]);
+            ->assertJsonValidationErrors([
+                'name',
+                'code',
+                'description',
+                'start_date',
+                'end_date',
+                'status',
+                'priority',
+                'manager_id',
+                'location_ids'
+            ]);
     }
 
     /** @test */
@@ -112,12 +118,12 @@ class ProjectControllerTest extends TestCase
         $response = $this->getJson('/api/projects/statistics');
 
         $response->assertOk()
-                ->assertJsonStructure([
-                    'data' => [
-                        'total',
-                        'by_status',
-                        'by_priority'
-                    ]
-                ]);
+            ->assertJsonStructure([
+                'data' => [
+                    'total',
+                    'by_status',
+                    'by_priority'
+                ]
+            ]);
     }
 }

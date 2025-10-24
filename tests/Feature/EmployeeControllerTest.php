@@ -18,10 +18,10 @@ class EmployeeControllerTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        
-        $this->user = \Bu\Server\Models\User::factory()->create();
+
+        $this->user = \App\Models\User::factory()->create();
         $this->actingAs($this->user);
-        
+
         $this->location = Location::factory()->create();
     }
 
@@ -35,18 +35,18 @@ class EmployeeControllerTest extends TestCase
         $response = $this->getJson('/api/employees');
 
         $response->assertOk()
-                ->assertJsonCount(5, 'data')
-                ->assertJsonStructure([
-                    'data' => [
-                        '*' => [
-                            'id',
-                            'employee_id',
-                            'first_name',
-                            'last_name',
-                            'email'
-                        ]
+            ->assertJsonCount(5, 'data')
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'employee_id',
+                        'first_name',
+                        'last_name',
+                        'email'
                     ]
-                ]);
+                ]
+            ]);
     }
 
     /** @test */
@@ -67,13 +67,13 @@ class EmployeeControllerTest extends TestCase
         $response = $this->postJson('/api/employees', $employeeData);
 
         $response->assertCreated()
-                ->assertJson([
-                    'data' => [
-                        'employee_id' => $employeeData['employee_id'],
-                        'first_name' => $employeeData['first_name'],
-                        'email' => $employeeData['email']
-                    ]
-                ]);
+            ->assertJson([
+                'data' => [
+                    'employee_id' => $employeeData['employee_id'],
+                    'first_name' => $employeeData['first_name'],
+                    'email' => $employeeData['email']
+                ]
+            ]);
     }
 
     /** @test */
@@ -82,11 +82,17 @@ class EmployeeControllerTest extends TestCase
         $response = $this->postJson('/api/employees', []);
 
         $response->assertStatus(422)
-                ->assertJsonValidationErrors([
-                    'employee_id', 'first_name', 'last_name', 
-                    'email', 'position', 'department', 
-                    'location_id', 'status', 'hire_date'
-                ]);
+            ->assertJsonValidationErrors([
+                'employee_id',
+                'first_name',
+                'last_name',
+                'email',
+                'position',
+                'department',
+                'location_id',
+                'status',
+                'hire_date'
+            ]);
     }
 
     /** @test */
@@ -104,19 +110,19 @@ class EmployeeControllerTest extends TestCase
         $response = $this->getJson('/api/employees/hierarchy');
 
         $response->assertOk()
-                ->assertJsonStructure([
-                    'data' => [
-                        '*' => [
-                            'id',
-                            'employee_id',
-                            'subordinates' => [
-                                '*' => [
-                                    'id',
-                                    'employee_id'
-                                ]
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'employee_id',
+                        'subordinates' => [
+                            '*' => [
+                                'id',
+                                'employee_id'
                             ]
                         ]
                     ]
-                ]);
+                ]
+            ]);
     }
 }

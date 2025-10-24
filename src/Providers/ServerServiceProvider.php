@@ -24,7 +24,6 @@ use Bu\Server\Models\ServiceSubscription;
 use Bu\Server\Models\Employee;
 use Bu\Server\Models\Location;
 use Bu\Server\Models\Project;
-use Bu\Server\Models\User;
 use Bu\Server\Models\AuditPlan;
 use Bu\Server\Models\AuditAsset;
 use Bu\Server\Models\AuditAssignment;

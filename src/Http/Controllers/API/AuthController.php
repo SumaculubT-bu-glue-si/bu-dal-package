@@ -2,7 +2,7 @@
 
 namespace Bu\Server\Http\Controllers\API;
 
-use Bu\Server\Models\User;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -68,7 +68,7 @@ class AuthController extends ApiController
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        
+
         return $this->successResponse(null, 'Successfully logged out');
     }
 
