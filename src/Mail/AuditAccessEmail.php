@@ -43,7 +43,7 @@ class AuditAccessEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'bu-server::emails.audit-access',
+            view: 'server.emails.audit-access',
             with: [
                 'accessUrl' => $this->accessUrl,
                 'expiresAt' => $this->expiresAt,

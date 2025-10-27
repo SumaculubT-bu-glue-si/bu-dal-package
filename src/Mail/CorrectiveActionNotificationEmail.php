@@ -53,7 +53,7 @@ class CorrectiveActionNotificationEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'bu-server::emails.corrective-action-notification',
+            view: 'server.emails.corrective-action-notification',
             with: [
                 'correctiveAction' => $this->correctiveAction,
                 'employee' => $this->employee,

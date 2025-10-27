@@ -45,7 +45,7 @@ class ConsolidatedCorrectiveActionEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'bu-server::emails.consolidated-corrective-action',
+            view: 'server.emails.consolidated-corrective-action',
             with: [
                 'correctiveActions' => $this->correctiveActions,
                 'employee' => $this->employee,
