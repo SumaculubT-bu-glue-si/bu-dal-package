@@ -75,20 +75,22 @@ class EmployeeAuditMutations
                 'current_date' => Carbon::now()->toDateString()
             ]);
 
-            // Check if plan is active (due date in future and status is Planning/In Progress)
+            // Check if plan is active (due date in future and status is Planning/In Progress) or completed
             $dueDateCheck = $auditPlan->due_date > Carbon::now()->toDateString();
-            $statusCheck = in_array($auditPlan->status, ['Planning', 'In Progress']);
+            $statusCheck = in_array($auditPlan->status, ['Planning', 'In Progress', 'Completed']);
 
-            if (!$dueDateCheck || !$statusCheck) {
-                Log::warning("Audit plan {$auditPlanId} not active", [
+            if (!$dueDateCheck && $auditPlan->status !== 'Completed') {
+                Log::warning("Audit plan {$auditPlanId} not accessible", [
                     'due_date_check' => $dueDateCheck,
                     'status_check' => $statusCheck,
                     'due_date' => $auditPlan->due_date,
                     'status' => $auditPlan->status
                 ]);
 
-                // TEMPORARY: Allow access even if plan is not active (for testing)
-                Log::info("Allowing access despite plan status for testing purposes");
+                return [
+                    'success' => false,
+                    'message' => 'This audit plan is no longer accessible.'
+                ];
             }
 
             // Check if employee has access to this audit plan

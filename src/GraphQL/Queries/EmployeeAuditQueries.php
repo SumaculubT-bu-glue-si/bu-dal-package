@@ -16,6 +16,7 @@ class EmployeeAuditQueries
 {
     /**
      * Get available audit plans for employee selection.
+     * Includes active plans (Planning, In Progress) and completed plans.
      * 
      * @return array
      */
@@ -24,13 +25,16 @@ class EmployeeAuditQueries
         try {
             Log::info("Fetching available audit plans for employee selection");
 
-            // Get all active audit plans (not due yet) with progress
-            $allPlans = AuditPlan::where('due_date', '>', Carbon::now()->toDateString())
-                ->whereIn('status', ['Planning', 'In Progress'])
+            // Get all active audit plans (not due yet) with progress, plus completed plans
+            $allPlans = AuditPlan::where(function ($query) {
+                $query->where('due_date', '>', Carbon::now()->toDateString())
+                    ->whereIn('status', ['Planning', 'In Progress'])
+                    ->orWhere('status', 'Completed');
+            })
                 ->orderBy('due_date', 'asc')
                 ->get(['id', 'name', 'start_date', 'due_date', 'status']);
 
-            Log::info("Found {$allPlans->count()} active audit plans");
+            Log::info("Found {$allPlans->count()} available audit plans (including completed)");
 
             $auditPlans = $allPlans->map(function ($plan) {
                 // Calculate progress for this plan
