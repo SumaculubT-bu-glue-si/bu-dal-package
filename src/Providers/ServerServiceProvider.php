@@ -29,6 +29,7 @@ use Bu\Server\Models\AuditAsset;
 use Bu\Server\Models\AuditAssignment;
 use Bu\Server\Models\CorrectiveAction;
 use Bu\Server\Models\CorrectiveActionAssignment;
+use App\Models\User;
 
 class ServerServiceProvider extends ServiceProvider
 {
