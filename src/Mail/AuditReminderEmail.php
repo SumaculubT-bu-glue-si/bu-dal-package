@@ -47,7 +47,7 @@ class AuditReminderEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'server::emails.audit-reminder',
+            view: 'bu-server::emails.audit-reminder',
             with: [
                 'auditPlan' => $this->auditPlan,
                 'employee' => $this->employee,

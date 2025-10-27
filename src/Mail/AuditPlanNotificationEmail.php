@@ -45,7 +45,7 @@ class AuditPlanNotificationEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'server::emails.audit-plan-notification',
+            view: 'bu-server::emails.audit-plan-notification',
             with: [
                 'auditPlan' => $this->auditPlan,
                 'employee' => $this->employee,
