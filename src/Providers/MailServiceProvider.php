@@ -30,6 +30,6 @@ class MailServiceProvider extends ServiceProvider
         }
 
         // Load email views from package
-        $this->loadViewsFrom(__DIR__ . '/../../../resources/views', 'server');
+        $this->loadViewsFrom(__DIR__ . '/../../resources/views', 'server');
     }
 }
